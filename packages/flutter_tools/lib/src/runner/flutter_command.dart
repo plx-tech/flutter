@@ -1242,7 +1242,7 @@ abstract class FlutterCommand extends Command<void> {
       final bool hasLocalWebSdk = argParser.options.containsKey('local-web-sdk') && stringArg('local-web-sdk') != null;
       if (boolArg(FlutterOptions.kWebResourcesCdnFlag) && !hasLocalWebSdk) {
         if (!dartDefines.any((String define) => define.startsWith('FLUTTER_WEB_CANVASKIT_URL='))) {
-          dartDefines.add('FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/${globals.flutterVersion.engineRevision}/');
+          dartDefines.add('FLUTTER_WEB_CANVASKIT_URL=https://storage.googleapis.com/clay-flutter-storage/flutter-canvaskit/${globals.flutterVersion.engineRevision}/');
         }
       }
     }
