@@ -439,6 +439,7 @@ abstract class MacOSBundleFlutterAssets extends Target {
       environment,
       assetDirectory,
       targetPlatform: TargetPlatform.darwin,
+      shaderTarget: ShaderTarget.impelleriOS,
       flavor: environment.defines[kFlavor],
     );
     environment.depFileService.writeToFile(
