@@ -111,7 +111,7 @@ abstract class Dart2WebTarget extends Target {
     if (environment.defines[kUseLocalCanvasKitFlag] != 'true') {
       final bool canvasKitUrlAlreadySet = dartDefines.any((String define) => define.startsWith('FLUTTER_WEB_CANVASKIT_URL='));
       if (!canvasKitUrlAlreadySet) {
-        dartDefines.add('FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/${globals.flutterVersion.engineRevision}/');
+        dartDefines.add('FLUTTER_WEB_CANVASKIT_URL=https://plx-flutter-canvaskit.b-cdn.net/${globals.flutterVersion.engineRevision}/');
       }
     }
     return dartDefines;
