@@ -10,9 +10,21 @@
 #include "flutter/flow/surface.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/shell/common/snapshot_controller.h"
+#include "fml/build_config.h"
 #include "third_party/skia/include/core/SkColorSpace.h"
 #include "third_party/skia/include/core/SkSurface.h"
+#include "third_party/skia/include/gpu/ganesh/SkImageGanesh.h"
 #include "third_party/skia/include/gpu/ganesh/SkSurfaceGanesh.h"
+
+#if FML_OS_ANDROID
+#include "third_party/skia/include/gpu/ganesh/gl/GrGLBackendSurface.h"
+#include "third_party/skia/include/gpu/ganesh/gl/GrGLTypes.h"
+#endif
+
+#if defined(FML_OS_IOS) || defined(FML_OS_MACOSX)
+#include "third_party/skia/include/gpu/ganesh/mtl/GrMtlBackendSurface.h"
+#include "third_party/skia/include/gpu/ganesh/mtl/GrMtlTypes.h"
+#endif
 
 namespace flutter {
 
@@ -56,6 +68,74 @@ void SnapshotControllerSkia::MakeRasterSnapshot(
     SkISize picture_size,
     std::function<void(const sk_sp<DlImage>&)> callback) {
   callback(MakeRasterSnapshotSync(display_list, picture_size));
+}
+
+sk_sp<DlImage> SnapshotControllerSkia::MakeFromTexture(int64_t raw_texture,
+                                                       SkISize size) {
+  GrBackendTexture texture;
+  SkColorType color_type;
+#if defined(FML_OS_ANDROID)
+  // GL_RGBA8 0x8058_(OES)
+  uint32_t format = 0x8058;
+  // GL_TEXTURE_EXTERNAL_OES
+  uint32_t target = 0x8D65;
+  const GrGLTextureInfo texture_info{target, static_cast<GrGLuint>(raw_texture),
+                                     format};
+  texture = GrBackendTextures::MakeGL(size.width(), size.height(),
+                                      skgpu::Mipmapped::kNo, texture_info);
+  color_type = SkColorType::kRGBA_8888_SkColorType;
+#elif defined(FML_OS_IOS) || defined(FML_OS_MACOSX)
+  GrMtlTextureInfo texture_info;
+  texture_info.fTexture =
+      sk_cfp<const void*>(reinterpret_cast<const void*>(raw_texture));
+  texture = GrBackendTextures::MakeMtl(size.width(), size.height(),
+                                       skgpu::Mipmapped::kNo, texture_info);
+  color_type = SkColorType::kBGRA_8888_SkColorType;
+#else
+  texture = GrBackendTexture();
+  color_type = kRGBA_8888_SkColorType;
+#endif
+  static const auto color_space = SkColorSpace::MakeSRGB();
+  const auto& delegate = GetDelegate();
+  if (delegate.GetSurface() && delegate.GetSurface()->GetContext()) {
+    const auto image = SkImages::BorrowTextureFrom(
+        delegate.GetSurface()->GetContext(), texture, kTopLeft_GrSurfaceOrigin,
+        color_type, kPremul_SkAlphaType, color_space);
+    return DlImage::Make(image);
+  }
+  return nullptr;
+}
+
+std::unique_ptr<Surface> SnapshotControllerSkia::MakeOffscreenSurface(
+    int64_t raw_texture,
+    const SkISize& size) {
+  GrBackendTexture texture;
+  SkColorType color_type;
+#if defined(FML_OS_ANDROID)
+  GrGLTextureInfo texture_info;
+  texture_info.fTarget = 0x0DE1;  // GR_GL_TEXTURE2D_2D;
+  texture_info.fID = raw_texture;
+  texture_info.fFormat = 0x8058;  // GR_GL_RGBA8;
+  texture = GrBackendTextures::MakeGL(size.width(), size.height(),
+                                      skgpu::Mipmapped::kNo, texture_info);
+  color_type = SkColorType::kRGBA_8888_SkColorType;
+#elif defined(FML_OS_IOS) || defined(FML_OS_MACOSX)
+  GrMtlTextureInfo texture_info;
+  texture_info.fTexture =
+      sk_cfp<const void*>(reinterpret_cast<const void*>(raw_texture));
+  texture = GrBackendTextures::MakeMtl(size.width(), size.height(),
+                                       skgpu::Mipmapped::kNo, texture_info);
+  color_type = SkColorType::kBGRA_8888_SkColorType;
+#else
+  texture = GrBackendTexture();
+  color_type = kRGBA_8888_SkColorType;
+#endif
+  static const auto color_space = SkColorSpace::MakeSRGB();
+  auto context = GetDelegate().GetSurface()->GetContext();
+  auto surface = SkSurfaces::WrapBackendTexture(
+      context, texture, kBottomLeft_GrSurfaceOrigin, 1, color_type, color_space,
+      nullptr, nullptr, nullptr);
+  return std::make_unique<OffscreenSkiaSurface>(surface, context);
 }
 
 sk_sp<DlImage> SnapshotControllerSkia::DoMakeRasterSnapshot(
@@ -172,6 +252,42 @@ sk_sp<SkImage> SnapshotControllerSkia::ConvertToRasterImage(
 void SnapshotControllerSkia::CacheRuntimeStage(
     const std::shared_ptr<impeller::RuntimeStage>& runtime_stage) {}
 
+SnapshotControllerSkia::OffscreenSkiaSurface::OffscreenSkiaSurface(
+    sk_sp<SkSurface> surface,
+    GrDirectContext* context)
+    : _surface(std::move(surface)), _context(context) {}
+
+SnapshotControllerSkia::OffscreenSkiaSurface::~OffscreenSkiaSurface() = default;
+
+bool SnapshotControllerSkia::OffscreenSkiaSurface::IsValid() {
+  return _surface != nullptr;
+}
+
+std::unique_ptr<SurfaceFrame>
+SnapshotControllerSkia::OffscreenSkiaSurface::AcquireFrame(
+    const SkISize& size) {
+  auto encode_callback = [](const SurfaceFrame& surface_frame,
+                            DlCanvas* canvas) -> bool {
+    canvas->Flush();
+    return true;
+  };
+  auto submit_callback = [](const SurfaceFrame& surface_frame) -> bool {
+    return true;
+  };
+  SurfaceFrame::FramebufferInfo framebuffer_info;
+  framebuffer_info.supports_readback = true;
+  return std::make_unique<SurfaceFrame>(_surface, framebuffer_info,
+                                        encode_callback, submit_callback, size);
+}
+
+SkMatrix SnapshotControllerSkia::OffscreenSkiaSurface::GetRootTransformation()
+    const {
+  return {};
+}
+
+GrDirectContext* SnapshotControllerSkia::OffscreenSkiaSurface::GetContext() {
+  return _context;
+}
 }  // namespace flutter
 
 #endif  //  !SLIMPELLER

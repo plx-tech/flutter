@@ -151,6 +151,7 @@ class HtmlRenderer implements Renderer {
     int? targetWidth,
     int? targetHeight,
     bool allowUpscaling = true,
+    bool mipmapped = true,
   }) async {
     final DomBlob blob = createDomBlob(<dynamic>[list.buffer]);
     return HtmlRendererBlobCodec(blob);
@@ -384,5 +385,10 @@ class HtmlRenderer implements Renderer {
     required bool transferOwnership,
   }) {
     throw Exception('Not implemented for HTML renderer');
+  }
+
+  @override
+  ui.RenderSurface createRenderSurface(Object textureId, int width, int height) {
+    throw UnimplementedError('createRenderSurface not implemented in HTML renderer.');
   }
 }

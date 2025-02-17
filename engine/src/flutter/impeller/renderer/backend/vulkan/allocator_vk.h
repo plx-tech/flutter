@@ -39,6 +39,9 @@ class AllocatorVK final : public Allocator {
       StorageMode mode,
       bool supports_memoryless_textures);
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const override;
+
  private:
   friend class ContextVK;
 

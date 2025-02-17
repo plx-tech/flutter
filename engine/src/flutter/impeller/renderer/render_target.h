@@ -71,6 +71,18 @@ class RenderTarget final {
       .store_action = StoreAction::kDontCare,
       .clear_color = Color::BlackTransparent()};
 
+  static std::shared_ptr<RenderTarget> CreateOffscreenFromTexture(
+      int64_t raw_texture,
+      const Context& context,
+      ISize size,
+      const std::string& label = "Offscreen From Texture",
+      StorageMode color_storage_mode = StorageMode::kDevicePrivate,
+      LoadAction color_load_action = LoadAction::kClear,
+      StoreAction color_store_action = StoreAction::kStore,
+      StorageMode stencil_storage_mode = StorageMode::kDeviceTransient,
+      LoadAction stencil_load_action = LoadAction::kClear,
+      StoreAction stencil_store_action = StoreAction::kDontCare);
+
   RenderTarget();
 
   ~RenderTarget();

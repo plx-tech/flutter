@@ -1,0 +1,27 @@
+{
+  "builds": [
+    {
+      "name": "web_tests/artifacts",
+      "gn": [
+        "--web",
+        "--runtime-mode=release",
+        "--no-goma"
+      ],
+      "ninja": {
+        "config": "wasm_release",
+        "targets": [
+          "flutter/web_sdk:flutter_web_sdk_archive"
+        ]
+      },
+      "archives": [
+        {
+          "name": "wasm_release",
+          "base_path": "out/wasm_release/zip_archives/",
+          "include_paths": [
+            "out/wasm_release/zip_archives/flutter-web-sdk.zip"
+          ]
+        }
+      ]
+    }
+  ]
+}

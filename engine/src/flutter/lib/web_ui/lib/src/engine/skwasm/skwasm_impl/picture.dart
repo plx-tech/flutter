@@ -36,6 +36,17 @@ class SkwasmPicture extends SkwasmObjectWrapper<RawPicture> implements ScenePict
       return s.convertRectFromNative(rect);
     });
   }
+
+  @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) async {
+    final SkwasmRenderSurface skwasmRenderSurface = renderSurface as SkwasmRenderSurface;
+    await skwasmRenderSurface.renderPicture(this);
+  }
+
+  @override
+  Future<Object?> toCanvas(int width, int height) {
+    throw UnimplementedError();
+  }
 }
 
 class SkwasmPictureRecorder extends SkwasmObjectWrapper<RawPictureRecorder>

@@ -328,6 +328,7 @@ class SkwasmRenderer implements Renderer {
     int? targetWidth,
     int? targetHeight,
     bool allowUpscaling = true,
+    bool mipmapped = true,
   }) async {
     final ImageType? contentType = detectImageType(list);
     if (contentType == null) {
@@ -462,6 +463,11 @@ class SkwasmRenderer implements Renderer {
     return SkwasmImage(
       imageCreateFromTextureSource(textureSource as JSObject, width, height, surface.handle),
     );
+  }
+
+  @override
+  ui.RenderSurface createRenderSurface(Object textureId, int width, int height) {
+    return SkwasmRenderSurface(textureId, width, height);
   }
 }
 

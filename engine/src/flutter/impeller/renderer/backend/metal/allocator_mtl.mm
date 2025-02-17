@@ -16,6 +16,15 @@
 
 namespace impeller {
 
+std::shared_ptr<Texture> AllocatorMTL::WrapTexture(
+    const TextureDescriptor& desc,
+    int64_t raw_texture) const {
+  auto texture = impeller::TextureMTL::TexturePointerWrapper(desc, raw_texture);
+  texture->SetCoordinateSystem(
+      impeller::TextureCoordinateSystem::kUploadFromHost);
+  return texture;
+}
+
 static bool DeviceSupportsDeviceTransientTargets(id<MTLDevice> device) {
   // Refer to the "Memoryless render targets" feature in the table below:
   // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf

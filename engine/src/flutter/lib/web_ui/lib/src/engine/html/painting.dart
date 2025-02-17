@@ -333,7 +333,11 @@ class HtmlFragmentShader implements ui.FragmentShader {
   }
 
   @override
-  void setImageSampler(int index, ui.Image image) {
+  void setImageSampler(
+    int index,
+    ui.Image image, {
+    ui.FilterQuality filterQuality = ui.FilterQuality.none,
+  }) {
     throw UnsupportedError('FragmentShader is not supported for the HTML renderer.');
   }
 
