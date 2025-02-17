@@ -13,6 +13,12 @@
 
 namespace impeller {
 
+std::shared_ptr<Texture> AllocatorGLES::WrapTexture(
+    const TextureDescriptor& desc,
+    int64_t raw_texture) const {
+  abort();
+}
+
 AllocatorGLES::AllocatorGLES(std::shared_ptr<ReactorGLES> reactor)
     : reactor_(std::move(reactor)), is_valid_(true) {}
 

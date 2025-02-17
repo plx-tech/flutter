@@ -1,0 +1,179 @@
+{
+  "builds": [
+    {
+      "archives": [
+        {
+          "base_path": "out/host_debug/zip_archives/",
+          "type": "gcs",
+          "include_paths": [
+            "out/host_debug/zip_archives/darwin-x64/artifacts.zip",
+            "out/host_debug/zip_archives/darwin-arm64/FlutterEmbedder.framework.zip",
+            "out/host_debug/zip_archives/dart-sdk-darwin-x64.zip",
+            "out/host_debug/zip_archives/flutter_patched_sdk.zip"
+          ],
+          "name": "host_debug"
+        }
+      ],
+      "drone_dimensions": [
+        "device_type=none",
+        "os=Mac-12",
+        "cpu=x86"
+      ],
+      "gclient_custom_vars": {
+        "download_android_deps": false
+      },
+      "gn": [
+        "--runtime-mode",
+        "debug",
+        "--no-lto",
+        "--prebuilt-dart-sdk",
+        "--build-embedder-examples",
+        "--use-glfw-swiftshader"
+      ],
+      "name": "host_debug",
+      "ninja": {
+        "config": "host_debug",
+        "targets": [
+          "flutter/build/archives:flutter_patched_sdk",
+          "flutter/build/archives:artifacts",
+          "flutter/build/archives:dart_sdk_archive",
+          "flutter/build/archives:flutter_embedder_framework",
+          "flutter/build/dart:copy_dart_sdk",
+          "flutter/lib/snapshot:create_macos_gen_snapshots",
+          "flutter/shell/platform/darwin/macos:zip_macos_flutter_framework",
+          "flutter/tools/font_subset",
+          "flutter:unittests"
+        ]
+      },
+      "tests": [
+        {
+          "language": "python3",
+          "name": "Host Tests for host_debug",
+          "parameters": [
+            "--variant",
+            "host_debug",
+            "--type",
+            "dart",
+            "--engine-capture-core-dump"
+          ],
+          "script": "flutter/testing/run_tests.py",
+          "type": "local"
+        }
+    ]
+    },
+    {
+      "archives": [
+        {
+          "base_path": "out/host_profile/zip_archives/",
+          "type": "gcs",
+          "include_paths": [
+            "out/host_profile/zip_archives/darwin-x64-profile/artifacts.zip"
+          ],
+          "name": "host_profile"
+        }
+      ],
+      "drone_dimensions": [
+        "device_type=none",
+        "os=Mac-12",
+        "cpu=x86"
+      ],
+      "gclient_custom_vars": {
+        "download_android_deps": false
+      },
+      "gn": [
+        "--runtime-mode",
+        "profile",
+        "--no-lto",
+        "--prebuilt-dart-sdk",
+        "--build-embedder-examples"
+      ],
+      "name": "host_profile",
+      "ninja": {
+        "config": "host_profile",
+        "targets": [
+          "flutter/build/dart:copy_dart_sdk",
+          "flutter/build/archives:artifacts",
+          "flutter/lib/snapshot:create_macos_gen_snapshots",
+          "flutter/shell/platform/darwin/macos:zip_macos_flutter_framework",
+          "flutter:unittests"
+        ]
+      },
+      "tests": [
+        {
+          "language": "python3",
+          "name": "Host Tests for host_profile",
+          "parameters": [
+            "--variant",
+            "host_profile",
+            "--type",
+            "dart,engine",
+            "--engine-capture-core-dump"
+          ],
+          "script": "flutter/testing/run_tests.py",
+          "type": "local"
+        }
+      ]
+    },
+    {
+      "archives": [
+        {
+          "base_path": "out/host_release/zip_archives/",
+          "type": "gcs",
+          "include_paths": [
+            "out/host_release/zip_archives/darwin-x64-release/artifacts.zip",
+            "out/host_release/zip_archives/darwin-x64/font-subset.zip",
+            "out/host_release/zip_archives/flutter_patched_sdk_product.zip"
+          ],
+          "name": "host_release"
+        }
+      ],
+      "drone_dimensions": [
+        "device_type=none",
+        "os=Mac-12",
+        "cpu=x86"
+      ],
+      "dependencies": [
+        {"dependency": "goldctl", "version": "git_revision:3a77d0b12c697a840ca0c7705208e8622dc94603"}
+      ],
+      "gclient_custom_vars": {
+        "download_android_deps": false
+      },
+      "gn": [
+        "--runtime-mode",
+        "release",
+        "--no-lto",
+        "--prebuilt-dart-sdk",
+        "--build-embedder-examples",
+        "--use-glfw-swiftshader"
+      ],
+      "name": "host_release",
+      "ninja": {
+        "config": "host_release",
+        "targets": [
+          "flutter/build/archives:artifacts",
+          "flutter/build/dart:copy_dart_sdk",
+          "flutter/lib/snapshot:create_macos_gen_snapshots",
+          "flutter/impeller/golden_tests:impeller_golden_tests",
+          "flutter/shell/platform/darwin/macos:zip_macos_flutter_framework",
+          "flutter/tools/font_subset",
+          "flutter:unittests",
+          "flutter/build/archives:flutter_patched_sdk"
+        ]
+      },
+      "tests": [
+        {
+          "language": "python3",
+          "name": "Impeller-golden, dart and engine tests for host_release",
+          "parameters": [
+            "--variant",
+            "host_release",
+            "--type",
+            "dart,engine,impeller-golden"
+          ],
+          "script": "flutter/testing/run_tests.py",
+          "type": "local"
+        }
+      ]
+    }
+  ]
+}

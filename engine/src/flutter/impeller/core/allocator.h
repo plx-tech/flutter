@@ -32,6 +32,9 @@ class Allocator {
 
   std::shared_ptr<Texture> CreateTexture(const TextureDescriptor& desc);
 
+  virtual std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                               int64_t raw_texture) const = 0;
+
   //------------------------------------------------------------------------------
   /// @brief      Minimum value for `row_bytes` on a Texture. The row
   ///             bytes parameter of that method must be aligned to this value.

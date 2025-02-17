@@ -39,6 +39,13 @@ class DlDeferredImageGPUSkia final : public DlImage {
       const fml::RefPtr<fml::TaskRunner>& raster_task_runner,
       fml::RefPtr<SkiaUnrefQueue> unref_queue);
 
+  static sk_sp<DlDeferredImageGPUSkia> MakeFromTexture(
+      int64_t raw_texture,
+      const SkISize& size,
+      fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+      const fml::RefPtr<fml::TaskRunner>& raster_task_runner,
+      fml::RefPtr<SkiaUnrefQueue> unref_queue);
+
   // |DlImage|
   ~DlDeferredImageGPUSkia() override;
 
@@ -94,6 +101,13 @@ class DlDeferredImageGPUSkia final : public DlImage {
         fml::RefPtr<fml::TaskRunner> raster_task_runner,
         fml::RefPtr<SkiaUnrefQueue> unref_queue);
 
+    static std::shared_ptr<ImageWrapper> MakeFromTexture(
+        const int64_t raw_texture,
+        const SkISize& size,
+        fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+        fml::RefPtr<fml::TaskRunner> raster_task_runner,
+        fml::RefPtr<SkiaUnrefQueue> unref_queue);
+
     const SkImageInfo image_info() const { return image_info_; }
     const GrBackendTexture& texture() const { return texture_; }
     bool isTextureBacked() const;
@@ -130,6 +144,8 @@ class DlDeferredImageGPUSkia final : public DlImage {
     // list, the image wrapper will be updated to hold this display list and the
     // layer tree can be dropped.
     void SnapshotDisplayList(std::unique_ptr<LayerTree> layer_tree = nullptr);
+
+    void FromTexture(int64_t raw_texture);
 
     // |ContextListener|
     void OnGrContextCreated() override;

@@ -32,9 +32,12 @@ class OffscreenSurface {
 
   bool IsValid() const;
 
+  DlISize size() const { return size_; }
+
  private:
   sk_sp<SkSurface> offscreen_surface_;
   DlSkCanvasAdapter adapter_;
+  DlISize size_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(OffscreenSurface);
 };

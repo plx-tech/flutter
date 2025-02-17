@@ -288,7 +288,8 @@ ImageDecoderImpeller::UnsafeUploadTextureToPrivate(
     const std::shared_ptr<impeller::Context>& context,
     const std::shared_ptr<impeller::DeviceBuffer>& buffer,
     const SkImageInfo& image_info,
-    const std::optional<SkImageInfo>& resize_info) {
+    const std::optional<SkImageInfo>& resize_info,
+    bool mipmapped) {
   const auto pixel_format =
       impeller::skia_conversions::ToPixelFormat(image_info.colorType());
   if (!pixel_format) {
@@ -302,7 +303,8 @@ ImageDecoderImpeller::UnsafeUploadTextureToPrivate(
   texture_descriptor.storage_mode = impeller::StorageMode::kDevicePrivate;
   texture_descriptor.format = pixel_format.value();
   texture_descriptor.size = {image_info.width(), image_info.height()};
-  texture_descriptor.mip_count = texture_descriptor.size.MipCount();
+  texture_descriptor.mip_count =
+      mipmapped ? texture_descriptor.size.MipCount() : 1u;
   texture_descriptor.compression_type = impeller::CompressionType::kLossy;
   if (context->GetBackendType() == impeller::Context::BackendType::kMetal &&
       resize_info.has_value()) {
@@ -341,7 +343,7 @@ ImageDecoderImpeller::UnsafeUploadTextureToPrivate(
   blit_pass->SetLabel("Mipmap Blit Pass");
   blit_pass->AddCopy(impeller::DeviceBuffer::AsBufferView(buffer),
                      dest_texture);
-  if (texture_descriptor.mip_count > 1) {
+  if (mipmapped && texture_descriptor.mip_count > 1) {
     blit_pass->GenerateMipmap(dest_texture);
   }
 
@@ -405,7 +407,8 @@ void ImageDecoderImpeller::UploadTextureToPrivate(
     const SkImageInfo& image_info,
     const std::shared_ptr<SkBitmap>& bitmap,
     const std::optional<SkImageInfo>& resize_info,
-    const std::shared_ptr<fml::SyncSwitch>& gpu_disabled_switch) {
+    const std::shared_ptr<fml::SyncSwitch>& gpu_disabled_switch,
+    bool mipmapped) {
   TRACE_EVENT0("impeller", __FUNCTION__);
   if (!context) {
     result(nullptr, "No Impeller context is available");
@@ -418,22 +421,25 @@ void ImageDecoderImpeller::UploadTextureToPrivate(
 
   gpu_disabled_switch->Execute(
       fml::SyncSwitch::Handlers()
-          .SetIfFalse([&result, context, buffer, image_info, resize_info] {
-            sk_sp<DlImage> image;
-            std::string decode_error;
-            std::tie(image, decode_error) = std::tie(image, decode_error) =
-                UnsafeUploadTextureToPrivate(context, buffer, image_info,
-                                             resize_info);
-            result(image, decode_error);
-          })
-          .SetIfTrue([&result, context, buffer, image_info, resize_info] {
+          .SetIfFalse(
+              [&result, context, buffer, image_info, resize_info, mipmapped] {
+                sk_sp<DlImage> image;
+                std::string decode_error;
+                std::tie(image, decode_error) = std::tie(image, decode_error) =
+                    UnsafeUploadTextureToPrivate(context, buffer, image_info,
+                                                 resize_info, mipmapped);
+                result(image, decode_error);
+              })
+          .SetIfTrue([&result, context, buffer, image_info, resize_info,
+                      mipmapped] {
             auto result_ptr = std::make_shared<ImageResult>(std::move(result));
             context->StoreTaskForGPU(
-                [result_ptr, context, buffer, image_info, resize_info]() {
+                [result_ptr, context, buffer, image_info, resize_info,
+                 mipmapped]() {
                   sk_sp<DlImage> image;
                   std::string decode_error;
                   std::tie(image, decode_error) = UnsafeUploadTextureToPrivate(
-                      context, buffer, image_info, resize_info);
+                      context, buffer, image_info, resize_info, mipmapped);
                   (*result_ptr)(image, decode_error);
                 },
                 [result_ptr]() {
@@ -503,6 +509,7 @@ ImageDecoderImpeller::UploadTextureToStorage(
 void ImageDecoderImpeller::Decode(fml::RefPtr<ImageDescriptor> descriptor,
                                   uint32_t target_width,
                                   uint32_t target_height,
+                                  bool mipmapped,
                                   const ImageResult& p_result) {
   FML_DCHECK(descriptor);
   FML_DCHECK(p_result);
@@ -527,7 +534,7 @@ void ImageDecoderImpeller::Decode(fml::RefPtr<ImageDescriptor> descriptor,
        io_runner = runners_.GetIOTaskRunner(),                    //
        result,
        supports_wide_gamut = supports_wide_gamut_,  //
-       gpu_disabled_switch = gpu_disabled_switch_]() {
+       gpu_disabled_switch = gpu_disabled_switch_, mipmapped]() {
 #if FML_OS_IOS_SIMULATOR
         // No-op backend.
         if (!context) {
@@ -552,16 +559,17 @@ void ImageDecoderImpeller::Decode(fml::RefPtr<ImageDescriptor> descriptor,
           return;
         }
 
-        auto upload_texture_and_invoke_result = [result, context, bitmap_result,
-                                                 gpu_disabled_switch]() {
-          UploadTextureToPrivate(result, context,              //
-                                 bitmap_result.device_buffer,  //
-                                 bitmap_result.image_info,     //
-                                 bitmap_result.sk_bitmap,      //
-                                 bitmap_result.resize_info,    //
-                                 gpu_disabled_switch           //
-          );
-        };
+        auto upload_texture_and_invoke_result =
+            [result, context, bitmap_result, gpu_disabled_switch, mipmapped]() {
+              UploadTextureToPrivate(result, context,              //
+                                     bitmap_result.device_buffer,  //
+                                     bitmap_result.image_info,     //
+                                     bitmap_result.sk_bitmap,      //
+                                     bitmap_result.resize_info,    //
+                                     gpu_disabled_switch,          //
+                                     mipmapped                     //
+              );
+            };
         // The I/O image uploads are not threadsafe on GLES.
         if (context->GetBackendType() ==
             impeller::Context::BackendType::kOpenGLES) {

@@ -55,6 +55,9 @@ class MockAllocator : public Allocator {
               OnCreateTexture,
               (const TextureDescriptor& desc),
               (override));
+  MOCK_CONST_METHOD2(WrapTexture,
+                     std::shared_ptr<Texture>(const TextureDescriptor& desc,
+                                              int64_t raw_texture));
 };
 
 class MockBlitPass : public BlitPass {

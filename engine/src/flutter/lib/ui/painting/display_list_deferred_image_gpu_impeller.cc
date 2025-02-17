@@ -31,6 +31,17 @@ sk_sp<DlDeferredImageGPUImpeller> DlDeferredImageGPUImpeller::Make(
           std::move(raster_task_runner))));
 }
 
+sk_sp<DlDeferredImageGPUImpeller> DlDeferredImageGPUImpeller::MakeFromTexture(
+    const int64_t raw_texture,
+    const SkISize& size,
+    fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+    fml::RefPtr<fml::TaskRunner> raster_task_runner) {
+  return sk_sp<DlDeferredImageGPUImpeller>(new DlDeferredImageGPUImpeller(
+      DlDeferredImageGPUImpeller::ImageWrapper::MakeFromTexture(
+          raw_texture, size, std::move(snapshot_delegate),
+          std::move(raster_task_runner))));
+}
+
 DlDeferredImageGPUImpeller::DlDeferredImageGPUImpeller(
     std::shared_ptr<ImageWrapper> wrapper)
     : wrapper_(std::move(wrapper)) {}
@@ -116,6 +127,19 @@ DlDeferredImageGPUImpeller::ImageWrapper::Make(
   return wrapper;
 }
 
+std::shared_ptr<DlDeferredImageGPUImpeller::ImageWrapper>
+DlDeferredImageGPUImpeller::ImageWrapper::MakeFromTexture(
+    const int64_t raw_texture,
+    const SkISize& size,
+    fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+    fml::RefPtr<fml::TaskRunner> raster_task_runner) {
+  auto wrapper = std::shared_ptr<ImageWrapper>(
+      new ImageWrapper(nullptr, size, std::move(snapshot_delegate),
+                       std::move(raster_task_runner)));
+  wrapper->FromTexture(raw_texture);
+  return wrapper;
+}
+
 DlDeferredImageGPUImpeller::ImageWrapper::ImageWrapper(
     sk_sp<DisplayList> display_list,
     const SkISize& size,
@@ -184,6 +208,29 @@ void DlDeferredImageGPUImpeller::ImageWrapper::SnapshotDisplayList(
         }
         wrapper->texture_ = snapshot->impeller_texture();
       }));
+}
+
+void DlDeferredImageGPUImpeller::ImageWrapper::FromTexture(
+    int64_t raw_texture) {
+  fml::TaskRunner::RunNowOrPostTask(
+      raster_task_runner_, [weak_this = weak_from_this(), raw_texture]() {
+        auto wrapper = weak_this.lock();
+        if (!wrapper) {
+          return;
+        }
+        auto snapshot_delegate = wrapper->snapshot_delegate_;
+        if (!snapshot_delegate) {
+          return;
+        }
+        auto result = snapshot_delegate->MakeImpellerGpuImageFromTexture(
+            raw_texture, wrapper->size_);
+        if (!result) {
+          std::scoped_lock lock(wrapper->error_mutex_);
+          wrapper->error_ = "Failed to create snapshot.";
+          return;
+        }
+        wrapper->texture_ = result->impeller_texture();
+      });
 }
 
 std::optional<std::string>

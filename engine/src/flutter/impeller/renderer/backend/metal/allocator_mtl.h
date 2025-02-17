@@ -44,6 +44,9 @@ class AllocatorMTL final : public Allocator {
   // |Allocator|
   Bytes DebugGetHeapUsage() const override;
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const override;
+
  private:
   friend class ContextMTL;
 

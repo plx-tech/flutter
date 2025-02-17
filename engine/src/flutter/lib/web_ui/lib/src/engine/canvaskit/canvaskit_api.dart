@@ -286,6 +286,11 @@ extension SkSurfaceExtension on SkSurface {
 
   external JSVoid dispose();
   external SkImage makeImageSnapshot();
+
+  // clay specific
+  external void updateFromSource(Object src, int width, int height, bool srcIsPremul);
+  external void readPixelsGL(Uint8List buffer, SkGrContext grContext);
+  external void delete();
 }
 
 @JS()
@@ -2935,6 +2940,7 @@ extension TypefaceFontProviderExtension on TypefaceFontProvider {
   @JS('registerFont')
   external JSVoid _registerFont(JSUint8Array font, JSString family);
   void registerFont(Uint8List font, String family) => _registerFont(font.toJS, family.toJS);
+  external void registerFontFromTypeface(SkTypeface typeface, String family);
 }
 
 @JS()
@@ -2946,6 +2952,8 @@ extension SkFontCollectionExtension on SkFontCollection {
   external void enableFontFallback();
   external void setDefaultFontManager(TypefaceFontProvider? fontManager);
   external void delete();
+  external void registerFont(Uint8List font, String family);
+  external void registerFontFromTypeface(SkTypeface typeface, String family);
 }
 
 @JS()
@@ -3507,3 +3515,9 @@ Future<CanvasKitModule> _downloadCanvasKitJs(String url) async {
   final JSAny scriptUrl = createTrustedScriptUrl(_resolveUrl(url));
   return (await importModule(scriptUrl).toDart) as CanvasKitModule;
 }
+
+@JS('window.flutterCanvasKit.TypefaceFontProvider.registerFontFromTypeface')
+external Object? get _registerFontFromTypeface;
+
+/// Whether the current browser supports `FinalizationRegistry`.
+bool get apiHasRegisterFontFromTypeface => _registerFontFromTypeface != null;

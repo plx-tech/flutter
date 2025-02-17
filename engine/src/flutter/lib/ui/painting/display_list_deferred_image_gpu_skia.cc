@@ -39,6 +39,19 @@ sk_sp<DlDeferredImageGPUSkia> DlDeferredImageGPUSkia::MakeFromLayerTree(
       raster_task_runner));
 }
 
+sk_sp<DlDeferredImageGPUSkia> DlDeferredImageGPUSkia::MakeFromTexture(
+    int64_t raw_texture,
+    const SkISize& size,
+    fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+    const fml::RefPtr<fml::TaskRunner>& raster_task_runner,
+    fml::RefPtr<SkiaUnrefQueue> unref_queue) {
+  return sk_sp<DlDeferredImageGPUSkia>(new DlDeferredImageGPUSkia(
+      ImageWrapper::MakeFromTexture(raw_texture, size,
+                                    std::move(snapshot_delegate),
+                                    raster_task_runner, std::move(unref_queue)),
+      raster_task_runner));
+}
+
 DlDeferredImageGPUSkia::DlDeferredImageGPUSkia(
     std::shared_ptr<ImageWrapper> image_wrapper,
     fml::RefPtr<fml::TaskRunner> raster_task_runner)
@@ -128,6 +141,20 @@ DlDeferredImageGPUSkia::ImageWrapper::MakeFromLayerTree(
   return wrapper;
 }
 
+std::shared_ptr<DlDeferredImageGPUSkia::ImageWrapper>
+DlDeferredImageGPUSkia::ImageWrapper::MakeFromTexture(
+    int64_t raw_texture,
+    const SkISize& size,
+    fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+    fml::RefPtr<fml::TaskRunner> raster_task_runner,
+    fml::RefPtr<SkiaUnrefQueue> unref_queue) {
+  auto wrapper = std::shared_ptr<ImageWrapper>(new ImageWrapper(
+      SkImageInfo::MakeN32Premul(size), nullptr, std::move(snapshot_delegate),
+      std::move(raster_task_runner), std::move(unref_queue)));
+  wrapper->FromTexture(raw_texture);
+  return wrapper;
+}
+
 DlDeferredImageGPUSkia::ImageWrapper::ImageWrapper(
     const SkImageInfo& image_info,
     sk_sp<DisplayList> display_list,
@@ -204,6 +231,28 @@ void DlDeferredImageGPUSkia::ImageWrapper::SnapshotDisplayList(
           wrapper->error_ = result->error;
         }
       }));
+}
+
+void DlDeferredImageGPUSkia::ImageWrapper::FromTexture(int64_t raw_texture) {
+  fml::TaskRunner::RunNowOrPostTask(
+      raster_task_runner_, [weak_this = weak_from_this(), raw_texture]() {
+        auto wrapper = weak_this.lock();
+        if (!wrapper) {
+          return;
+        }
+        auto snapshot_delegate = wrapper->snapshot_delegate_;
+        if (!snapshot_delegate) {
+          return;
+        }
+        auto result = snapshot_delegate->MakeSkiaGpuImageFromTexture(
+            raw_texture, wrapper->image_info_.dimensions());
+        if (result->image) {
+          wrapper->image_ = std::move(result->image);
+        } else {
+          std::scoped_lock lock(wrapper->error_mutex_);
+          wrapper->error_ = result->error;
+        }
+      });
 }
 
 std::optional<std::string> DlDeferredImageGPUSkia::ImageWrapper::get_error() {
