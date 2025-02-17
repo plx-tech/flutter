@@ -206,6 +206,11 @@ class FailingAllocator : public Allocator {
     return delegate_->CreateBuffer(desc);
   }
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const {
+    return nullptr;
+  }
+
   std::shared_ptr<Texture> OnCreateTexture(const TextureDescriptor& desc) {
     return delegate_->CreateTexture(desc);
   }

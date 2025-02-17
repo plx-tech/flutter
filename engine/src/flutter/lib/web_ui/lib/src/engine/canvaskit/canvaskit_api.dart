@@ -211,6 +211,11 @@ extension type SkSurface(JSObject _) implements JSObject {
   external double height();
   external void dispose();
   external SkImage makeImageSnapshot();
+
+  // clay specific
+  external void updateFromSource(Object src, int width, int height, bool srcIsPremul);
+  external void readPixelsGL(Uint8List buffer, SkGrContext grContext);
+  external void delete();
 }
 
 extension type SkGrContext(JSObject _) implements JSObject {
@@ -1144,10 +1149,9 @@ Float32List toSkPoint(ui.Offset offset) {
 }
 
 /// Color stops used when the framework specifies `null`.
-final Float32List _kDefaultSkColorStops =
-    Float32List(2)
-      ..[0] = 0
-      ..[1] = 1;
+final Float32List _kDefaultSkColorStops = Float32List(2)
+  ..[0] = 0
+  ..[1] = 1;
 
 /// Converts a list of color stops into a Skia-compatible JS array or color stops.
 ///
@@ -2063,12 +2067,15 @@ extension type TypefaceFontProvider(JSObject _) implements SkFontMgr {
   @JS('registerFont')
   external void _registerFont(JSUint8Array font, String family);
   void registerFont(Uint8List font, String family) => _registerFont(font.toJS, family);
+  external void registerFontFromTypeface(SkTypeface typeface, String family);
 }
 
 extension type SkFontCollection(JSObject _) implements JSObject {
   external void enableFontFallback();
   external void setDefaultFontManager(TypefaceFontProvider? fontManager);
   external void delete();
+  external void registerFont(Uint8List font, String family);
+  external void registerFontFromTypeface(SkTypeface typeface, String family);
 }
 
 extension type SkLineMetrics(JSObject _) implements JSObject {
@@ -2403,3 +2410,9 @@ Future<CanvasKitModule> _downloadCanvasKitJs(String url) async {
   final JSAny scriptUrl = createTrustedScriptUrl(_resolveUrl(url));
   return (await importModule(scriptUrl).toDart) as CanvasKitModule;
 }
+
+@JS('window.flutterCanvasKit.TypefaceFontProvider.registerFontFromTypeface')
+external Object? get _registerFontFromTypeface;
+
+/// Whether the current browser supports `FinalizationRegistry`.
+bool get apiHasRegisterFontFromTypeface => _registerFontFromTypeface != null;

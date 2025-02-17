@@ -7,6 +7,7 @@
 
 #include "dart_api.h"
 #include "flutter/flow/layers/backdrop_filter_layer.h"
+#include "flutter/flow/layers/blend_layer.h"
 #include "flutter/flow/layers/clip_path_layer.h"
 #include "flutter/flow/layers/clip_rect_layer.h"
 #include "flutter/flow/layers/clip_rrect_layer.h"
@@ -146,6 +147,23 @@ void SceneBuilder::pushOpacity(Dart_Handle layer_handle,
 
   if (old_layer && old_layer->Layer()) {
     layer->AssignOldLayer(old_layer->Layer().get());
+  }
+}
+
+void SceneBuilder::pushBlend(Dart_Handle layer_handle,
+                             int alpha,
+                             double dx,
+                             double dy,
+                             int blendMode,
+                             fml::RefPtr<EngineLayer> oldLayer) {
+  auto layer = std::make_shared<flutter::BlendLayer>(
+      alpha, DlPoint(SafeNarrow(dx), SafeNarrow(dy)),
+      static_cast<DlBlendMode>(blendMode));
+  PushLayer(layer);
+  EngineLayer::MakeRetained(layer_handle, layer);
+
+  if (oldLayer && oldLayer->Layer()) {
+    layer->AssignOldLayer(oldLayer->Layer().get());
   }
 }
 

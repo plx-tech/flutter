@@ -237,6 +237,7 @@ class CanvasKitRenderer implements Renderer {
     int? targetWidth,
     int? targetHeight,
     bool allowUpscaling = true,
+    bool mipmapped = true,
   }) async => skiaInstantiateImageCodec(list, targetWidth, targetHeight, allowUpscaling);
 
   @override
@@ -441,8 +442,9 @@ class CanvasKitRenderer implements Renderer {
     );
     final ViewRasterizer rasterizer = _rasterizers[view.viewId]!;
     final RenderQueue renderQueue = rasterizer.queue;
-    final FrameTimingRecorder? recorder =
-        FrameTimingRecorder.frameTimingsEnabled ? FrameTimingRecorder() : null;
+    final FrameTimingRecorder? recorder = FrameTimingRecorder.frameTimingsEnabled
+        ? FrameTimingRecorder()
+        : null;
     if (renderQueue.current != null) {
       // If a scene is already queued up, drop it and queue this one up instead
       // so that the scene view always displays the most recently requested scene.
@@ -576,4 +578,8 @@ class CanvasKitRenderer implements Renderer {
 
   @override
   void dumpDebugInfo() {}
+
+  ui.RenderSurface createRenderSurface(Object textureId, int width, int height) {
+    return CkRenderSurface(textureId, width, height);
+  }
 }

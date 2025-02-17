@@ -96,6 +96,11 @@ static PoolVMA CreateBufferPool(VmaAllocator allocator) {
   return {allocator, pool};
 }
 
+std::shared_ptr<Texture> AllocatorVK::WrapTexture(const TextureDescriptor& desc,
+                                                  int64_t raw_texture) const {
+  abort();
+}
+
 AllocatorVK::AllocatorVK(std::weak_ptr<Context> context,
                          uint32_t vulkan_api_version,
                          const vk::PhysicalDevice& physical_device,
