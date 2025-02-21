@@ -232,25 +232,12 @@ SnapshotControllerImpeller::OffscreenImpellerSurface::AcquireFrame(
 
     SkIRect cull_rect = SkIRect::MakeWH(size.width(), size.height());
 
-    const auto ip_cull_rect =
-        impeller::Rect::MakeLTRB(cull_rect.left(), cull_rect.top(),
-                                 cull_rect.right(), cull_rect.bottom());
-    impeller::FirstPassDispatcher collector(aiks_context->GetContentContext(),
-                                            impeller::Matrix(), ip_cull_rect);
-    display_list->Dispatch(collector, cull_rect);
-
-    impeller::CanvasDlDispatcher impeller_dispatcher(
-        aiks_context->GetContentContext(),         //
-        *render_target,                            //
-        /*is_onscreen=*/true,                      //
-        display_list->root_has_backdrop_filter(),  //
-        display_list->max_root_blend_mode(),       //
-        impeller::IRect::RoundOut(ip_cull_rect)    //
-    );
-    display_list->Dispatch(impeller_dispatcher, cull_rect);
-    impeller_dispatcher.FinishRecording();
-
-    return true;
+    return impeller::RenderToTarget(aiks_context->GetContentContext(),  //
+                                    *render_target,                     //
+                                    display_list,                       //
+                                    cull_rect,                          //
+                                    /*reset_host_buffer=*/false,        //
+                                    false);
   };
   return std::make_unique<SurfaceFrame>(
       nullptr,                          // surface
