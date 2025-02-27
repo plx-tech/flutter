@@ -9,6 +9,10 @@
 #include "impeller/renderer/backend/vulkan/texture_source_vk.h"
 #include "impeller/renderer/backend/vulkan/yuv_conversion_library_vk.h"
 
+#include "fml/platform/android/jni_util.h"
+#include "fml/platform/android/scoped_java_ref.h"
+#include "impeller/toolkit/android/hardware_buffer.h"
+
 namespace impeller {
 
 using AHBProperties = vk::StructureChain<
@@ -416,6 +420,27 @@ std::shared_ptr<YUVConversionVK> AHBTextureSourceVK::GetYUVConversion() const {
 
 const android::HardwareBuffer* AHBTextureSourceVK::GetBackingStore() const {
   return backing_store_.get();
+}
+
+std::shared_ptr<AHBTextureSourceVK> AHBTextureSourceVK::fromRawTexture(
+    const std::shared_ptr<Context>& context,
+    int64_t raw_texture) {
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+
+  fml::jni::ScopedJavaGlobalRef hardwareBufferRef =
+      fml::jni::ScopedJavaGlobalRef(env, (jobject)raw_texture);
+  const auto& proc =
+      impeller::android::GetProcTable().AHardwareBuffer_fromHardwareBuffer;
+  AHardwareBuffer* a_hardware_buffer =
+      proc ? proc(env, hardwareBufferRef.obj()) : nullptr;
+
+  AHardwareBuffer_Desc hb_desc = {};
+  impeller::android::GetProcTable().AHardwareBuffer_describe(a_hardware_buffer,
+                                                             &hb_desc);
+
+  auto texture_source = std::make_shared<impeller::AHBTextureSourceVK>(
+      context, a_hardware_buffer, hb_desc);
+  return texture_source;
 }
 
 }  // namespace impeller

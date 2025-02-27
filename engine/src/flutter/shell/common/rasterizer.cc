@@ -489,7 +489,7 @@ sk_sp<DlImage> Rasterizer::MakeImpellerGpuImageFromTexture(
     int64_t raw_texture,
     const SkISize& size) {
   #if defined(IMPELLER_SUPPORTS_RENDERING)
-      #if (defined(FML_OS_IOS) || defined(FML_OS_MACOSX))
+     #if (defined(FML_OS_IOS) || defined(FML_OS_MACOSX) || defined(FML_OS_ANDROID))
         sk_sp<flutter::DlImage> result;
         delegate_.GetIsGpuDisabledSyncSwitch()->Execute(
             fml::SyncSwitch::Handlers()
@@ -498,63 +498,8 @@ sk_sp<DlImage> Rasterizer::MakeImpellerGpuImageFromTexture(
                   result = snapshot_controller_->MakeFromTexture(raw_texture, size);
                 }));
         return result;
-      #else 
-        #if (defined(FML_OS_ANDROID))
-          sk_sp<flutter::DlImage> result;
-          delegate_.GetIsGpuDisabledSyncSwitch()->Execute(
-            fml::SyncSwitch::Handlers()
-                .SetIfTrue([&] { result = nullptr; })
-                .SetIfFalse([&] {
-                  JNIEnv* env = fml::jni::AttachCurrentThread();
-    
-                  fml::jni::ScopedJavaGlobalRef hardwareBufferRef = fml::jni::ScopedJavaGlobalRef(env, (jobject)raw_texture);
-                  const auto& proc = impeller::android::GetProcTable().AHardwareBuffer_fromHardwareBuffer;
-                  AHardwareBuffer* a_hardware_buffer = proc ? proc(env, hardwareBufferRef.obj()) : nullptr;
-    
-                  AHardwareBuffer_Desc hb_desc = {};
-                  impeller::android::GetProcTable().AHardwareBuffer_describe(a_hardware_buffer, &hb_desc);
-    
-                  auto context = std::static_pointer_cast<impeller::ContextVK>(impeller_context_.lock());
-                  auto texture_source = std::make_shared<impeller::AHBTextureSourceVK>(
-                      context, a_hardware_buffer, hb_desc);
-    
-                  FML_DLOG(IMPORTANT) << "width: " << hb_desc.width << " height: " << hb_desc.height << " format: " << hb_desc.format << " usage: " << hb_desc.usage;
-    
-                  //if (!texture_source->IsValid()) {
-                  //  throw std::runtime_error("Could not create AHBTextureSourceVK from hardware buffer.");
-                  //}
-    
-                  auto texture =
-                      std::make_shared<impeller::TextureVK>(context, texture_source);
-                  {
-                    auto buffer = context->CreateCommandBuffer();
-                    impeller::CommandBufferVK& buffer_vk =
-                        impeller::CommandBufferVK::Cast(*buffer);
-    
-                    impeller::BarrierVK barrier;
-                    barrier.cmd_buffer = buffer_vk.GetCommandBuffer();
-                    barrier.src_access = impeller::vk::AccessFlagBits::eColorAttachmentWrite |
-                                         impeller::vk::AccessFlagBits::eTransferWrite;
-                    barrier.src_stage =
-                        impeller::vk::PipelineStageFlagBits::eColorAttachmentOutput |
-                        impeller::vk::PipelineStageFlagBits::eTransfer;
-                    barrier.dst_access = impeller::vk::AccessFlagBits::eShaderRead;
-                    barrier.dst_stage = impeller::vk::PipelineStageFlagBits::eFragmentShader;
-    
-                    barrier.new_layout = impeller::vk::ImageLayout::eShaderReadOnlyOptimal;
-    
-                    if (!texture->SetLayout(barrier)) {
-                      return;
-                    }
-                    if (!context->GetCommandQueue()->Submit({buffer}).ok()) {
-                      return;
-                    }
-                  }
-    
-                  result = impeller::DlImageImpeller::Make(texture);
-                }));
-          return result;
-        #endif
+      #else
+        abort();
       #endif
 #else
   abort();

@@ -16,6 +16,15 @@
 #include "impeller/renderer/backend/vulkan/texture_vk.h"
 #include "vulkan/vulkan_enums.hpp"
 
+#if FML_OS_ANDROID
+#include "fml/platform/android/jni_util.h"
+#include "fml/platform/android/scoped_java_ref.h"
+#include "impeller/renderer/backend/vulkan/android/ahb_texture_source_vk.h"  // nogncheck
+#include "impeller/renderer/backend/vulkan/command_buffer_vk.h"  // nogncheck
+#include "impeller/renderer/backend/vulkan/texture_vk.h"         // nogncheck
+#include "impeller/toolkit/android/hardware_buffer.h"            // nogncheck
+#endif
+
 namespace impeller {
 
 static constexpr vk::Flags<vk::MemoryPropertyFlagBits>
@@ -96,7 +105,19 @@ static PoolVMA CreateBufferPool(VmaAllocator allocator) {
 
 std::shared_ptr<Texture> AllocatorVK::WrapTexture(const TextureDescriptor& desc,
                                                   int64_t raw_texture) const {
+#if (defined(FML_OS_ANDROID))
+  FML_DLOG(IMPORTANT) << "##### WRAP TEXTURE";
+  auto context = context_.lock();
+  auto texture_source =
+      AHBTextureSourceVK::fromRawTexture(context, raw_texture);
+
+  auto texture =
+      std::make_shared<impeller::TextureVK>(context_, texture_source);
+
+  return texture;
+#else
   abort();
+#endif
 }
 
 AllocatorVK::AllocatorVK(std::weak_ptr<Context> context,
