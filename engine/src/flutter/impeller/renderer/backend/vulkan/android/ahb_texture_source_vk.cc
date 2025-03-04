@@ -422,13 +422,13 @@ const android::HardwareBuffer* AHBTextureSourceVK::GetBackingStore() const {
   return backing_store_.get();
 }
 
-std::shared_ptr<AHBTextureSourceVK> AHBTextureSourceVK::fromRawTexture(
+std::shared_ptr<AHBTextureSourceVK> AHBTextureSourceVK::fromRawHardwareBuffer(
     const std::shared_ptr<Context>& context,
-    int64_t raw_texture) {
+    int64_t raw_hardware_buffer) {
   JNIEnv* env = fml::jni::AttachCurrentThread();
 
   fml::jni::ScopedJavaGlobalRef hardwareBufferRef =
-      fml::jni::ScopedJavaGlobalRef(env, (jobject)raw_texture);
+      fml::jni::ScopedJavaGlobalRef(env, (jobject)raw_hardware_buffer);
   const auto& proc =
       impeller::android::GetProcTable().AHardwareBuffer_fromHardwareBuffer;
   AHardwareBuffer* a_hardware_buffer =

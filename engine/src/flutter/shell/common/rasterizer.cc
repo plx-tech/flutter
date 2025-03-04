@@ -44,17 +44,6 @@
 #include "impeller/display_list/dl_dispatcher.h"  // nogncheck
 #endif
 
-#if FML_OS_ANDROID
-#include "fml/platform/android/scoped_java_ref.h"
-#include "fml/platform/android/jni_util.h"
-#include "impeller/toolkit/android/hardware_buffer.h"  // nogncheck
-#include "impeller/renderer/backend/vulkan/android/ahb_texture_source_vk.h"  // nogncheck
-#include "impeller/renderer/backend/vulkan/texture_vk.h"  // nogncheck
-#include "impeller/display_list/dl_image_impeller.h"  // nogncheck
-#include "impeller/renderer/backend/vulkan/command_buffer_vk.h"  // nogncheck
-// #include "flutter/impeller/renderer/backend/vulkan/command_encoder_vk.h"  // nogncheck
-#endif
-
 namespace flutter {
 
 // The rasterizer will tell Skia to purge cached resources that have not been
@@ -488,19 +477,19 @@ Rasterizer::MakeSkiaGpuImageFromTexture(int64_t raw_texture,
 sk_sp<DlImage> Rasterizer::MakeImpellerGpuImageFromTexture(
     int64_t raw_texture,
     const SkISize& size) {
-  #if defined(IMPELLER_SUPPORTS_RENDERING)
-     #if (defined(FML_OS_IOS) || defined(FML_OS_MACOSX) || defined(FML_OS_ANDROID))
-        sk_sp<flutter::DlImage> result;
-        delegate_.GetIsGpuDisabledSyncSwitch()->Execute(
-            fml::SyncSwitch::Handlers()
-                .SetIfTrue([&] { result = nullptr; })
-                .SetIfFalse([&] {
-                  result = snapshot_controller_->MakeFromTexture(raw_texture, size);
-                }));
-        return result;
-      #else
-        abort();
-      #endif
+#if defined(IMPELLER_SUPPORTS_RENDERING)
+#if (defined(FML_OS_IOS) || defined(FML_OS_MACOSX) || defined(FML_OS_ANDROID))
+  sk_sp<flutter::DlImage> result;
+  delegate_.GetIsGpuDisabledSyncSwitch()->Execute(
+      fml::SyncSwitch::Handlers()
+          .SetIfTrue([&] { result = nullptr; })
+          .SetIfFalse([&] {
+            result = snapshot_controller_->MakeFromTexture(raw_texture, size);
+          }));
+  return result;
+#else
+  abort();
+#endif
 #else
   abort();
 #endif
