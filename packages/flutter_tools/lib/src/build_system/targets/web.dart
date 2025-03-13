@@ -115,7 +115,7 @@ abstract class Dart2WebTarget extends Target {
       );
       if (!canvasKitUrlAlreadySet) {
         dartDefines.add(
-          'FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/${globals.flutterVersion.engineRevision}/',
+          'FLUTTER_WEB_CANVASKIT_URL=https://plx-flutter-canvaskit.b-cdn.net/${globals.flutterVersion.engineRevision}/'
         );
       }
     }
