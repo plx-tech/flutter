@@ -78,9 +78,12 @@ void BlendLayer::Paint(PaintContext& context) const {
 
   auto mutator = context.state_stack.save();
   mutator.translate(offset_.x, offset_.y);
+
+#if !SLIMPELLER
   if (context.raster_cache) {
     mutator.integralTransform();
   }
+#endif  //  !SLIMPELLER
 
   mutator.applyBlendOpacity(child_paint_bounds(), opacity(), blend_mode_);
 

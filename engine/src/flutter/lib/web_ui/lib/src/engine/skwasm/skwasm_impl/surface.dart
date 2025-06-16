@@ -152,7 +152,7 @@ class SkwasmRenderSurface implements ui.RenderSurface {
 
   @override
   ui.Image? makeImageSnapshotFromSource(Object src) {
-    final _VideoFrame videoFrame = _VideoFrame(src as JSObject);
+    final _VideoFrame videoFrame = _VideoFrame._(src as JSObject);
 
     return SkwasmImage(
       imageCreateFromTextureSource(
@@ -182,6 +182,4 @@ class SkwasmRenderSurface implements ui.RenderSurface {
 
 @JS('VideoFrame')
 @staticInterop
-class _VideoFrame implements DomCanvasImageSource {
-  external factory _VideoFrame(JSAny source);
-}
+extension type _VideoFrame._(JSObject _) implements DomCanvasImageSource {}

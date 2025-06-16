@@ -67,6 +67,11 @@ static sk_sp<DlImage> CreateDeferredImageFromTexture(
     fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
     fml::RefPtr<fml::TaskRunner> raster_task_runner,
     fml::RefPtr<SkiaUnrefQueue> unref_queue) {
+#if SLIMPELLER
+  return DlDeferredImageGPUImpeller::MakeFromTexture(
+      raw_texture, size, std::move(snapshot_delegate),
+      std::move(raster_task_runner));
+#else
 #if IMPELLER_SUPPORTS_RENDERING
   if (impeller) {
     return DlDeferredImageGPUImpeller::MakeFromTexture(
@@ -77,6 +82,7 @@ static sk_sp<DlImage> CreateDeferredImageFromTexture(
   return DlDeferredImageGPUSkia::MakeFromTexture(
       raw_texture, size, std::move(snapshot_delegate), raster_task_runner,
       std::move(unref_queue));
+#endif  // SLIMPELLER
 }
 
 fml::RefPtr<flutter::CanvasImage> flutter::CanvasImage::CreateFromTextureID(

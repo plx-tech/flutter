@@ -632,6 +632,11 @@ class BlendOperation implements LayerOperation {
 
   @override
   bool get affectsBackdrop => false;
+
+  @override
+  Map<String, Object> get debugJsonDescription {
+    return <String, Object>{'type': 'blend', 'blendMode': blendMode.toString()};
+  }
 }
 
 class TransformLayer with PictureEngineLayer implements ui.TransformEngineLayer {

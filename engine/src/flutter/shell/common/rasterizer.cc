@@ -453,6 +453,10 @@ sk_sp<DlImage> Rasterizer::MakeRasterSnapshotSync(
 std::unique_ptr<Rasterizer::GpuImageResult>
 Rasterizer::MakeSkiaGpuImageFromTexture(int64_t raw_texture,
                                         const SkISize& size) {
+#if SLIMPELLER
+  FML_LOG(FATAL) << "Impeller opt-out unavailable.";
+  return nullptr;
+#else
   std::unique_ptr<SnapshotDelegate::GpuImageResult> result;
   delegate_.GetIsGpuDisabledSyncSwitch()->Execute(
       fml::SyncSwitch::Handlers()
@@ -472,6 +476,7 @@ Rasterizer::MakeSkiaGpuImageFromTexture(int64_t raw_texture,
             }
           }));
   return result;
+#endif  //  SLIMPELLER
 }
 
 sk_sp<DlImage> Rasterizer::MakeImpellerGpuImageFromTexture(
@@ -926,11 +931,13 @@ bool Rasterizer::DrawLayerToSurface(
               }
               frame->Submit();
 
+#if !SLIMPELLER
               if (surface_->GetContext()) {
                 surface_->GetContext()->flushAndSubmit(GrSyncCpu::kYes);
                 surface_->GetContext()->performDeferredCleanup(
                     kSkiaCleanupExpiration);
               }
+#endif  //  !SLIMPELLER
 
               return;
             }

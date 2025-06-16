@@ -611,7 +611,7 @@ class CkRenderSurface implements ui.RenderSurface {
     if (grContext == null) {
       throw Exception('No grContext from pictureToImageSurface when setting up RenderSurface.');
     }
-    skiaObject.readPixelsGL(buffer.asUint8List(), grContext);
+    skiaObject.readPixelsGL(buffer.asUint8List().toJS, grContext);
     return buffer;
   }
 
