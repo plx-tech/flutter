@@ -213,7 +213,9 @@ void RenderPassGLES::ResetGLState(const ProcTableGLES& gl) {
 #endif  // IMPELLER_DEBUG
 
   TextureGLES& color_gles = TextureGLES::Cast(*pass_data.color_attachment);
-  const bool is_default_fbo = color_gles.IsWrapped();
+  auto handle = color_gles.GetHandleGLES();
+  const bool is_default_fbo =
+      color_gles.IsWrapped() && handle.GetExternal() == false;
 
   std::optional<GLuint> fbo = 0;
   if (is_default_fbo) {

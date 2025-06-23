@@ -211,6 +211,16 @@ HandleGLES ReactorGLES::CreateUntrackedHandle(HandleType type) const {
   return new_handle;
 }
 
+HandleGLES ReactorGLES::CreateUntrackedHandleExternal(
+    HandleType type,
+    GLuint external_handle) const {
+  FML_DCHECK(CanReactOnCurrentThread());
+  auto new_handle = HandleGLES::Create(type);
+  new_handle.untracked_id_ = external_handle;
+  new_handle.external_ = true;
+  return new_handle;
+}
+
 HandleGLES ReactorGLES::CreateHandle(HandleType type, GLuint external_handle) {
   if (type == HandleType::kUnknown) {
     return HandleGLES::DeadHandle();
@@ -234,6 +244,11 @@ HandleGLES ReactorGLES::CreateHandle(HandleType type, GLuint external_handle) {
 
 void ReactorGLES::CollectHandle(HandleGLES handle) {
   if (handle.untracked_id_.has_value()) {
+    if (handle.GetExternal()) {
+      // Don't collect external handles.
+      return;
+    }
+
     LiveHandle live_handle(GLStorage{.integer = handle.untracked_id_.value()});
     live_handle.pending_collection = true;
     WriterLock handles_lock(handles_mutex_);

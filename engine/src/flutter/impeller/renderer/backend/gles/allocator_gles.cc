@@ -9,6 +9,7 @@
 #include "impeller/base/allocation.h"
 #include "impeller/base/config.h"
 #include "impeller/renderer/backend/gles/device_buffer_gles.h"
+#include "impeller/renderer/backend/gles/handle_gles.h"
 #include "impeller/renderer/backend/gles/texture_gles.h"
 
 namespace impeller {
@@ -16,7 +17,13 @@ namespace impeller {
 std::shared_ptr<Texture> AllocatorGLES::WrapTexture(
     const TextureDescriptor& desc,
     int64_t raw_texture) const {
-  abort();
+  impeller::HandleGLES handle = reactor_->CreateUntrackedHandleExternal(
+      impeller::HandleType::kTexture, raw_texture);
+
+  std::shared_ptr<impeller::TextureGLES> texture =
+      impeller::TextureGLES::WrapTexture(reactor_, desc, handle);
+  texture->SetCoordinateSystem(TextureCoordinateSystem::kUploadFromHost);
+  return texture;
 }
 
 AllocatorGLES::AllocatorGLES(std::shared_ptr<ReactorGLES> reactor)

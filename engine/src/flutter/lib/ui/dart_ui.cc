@@ -88,6 +88,7 @@ typedef CanvasPath Path;
   /* Other */                                                      \
   V(FontCollection::LoadFontFromList)                              \
   V(ImageDescriptor::initEncoded)                                  \
+  V(ImageFilter::equals)                                           \
   V(ImmutableBuffer::init)                                         \
   V(ImmutableBuffer::initFromAsset)                                \
   V(ImmutableBuffer::initFromFile)                                 \
@@ -213,7 +214,6 @@ typedef CanvasPath Path;
   V(ImageFilter, initComposeFilter)              \
   V(ImageFilter, initShader)                     \
   V(ImageFilter, initMatrix)                     \
-  V(ImageFilter, equals)                         \
   V(ImageShader, dispose)                        \
   V(ImageShader, initWithImage)                  \
   V(ImmutableBuffer, dispose)                    \

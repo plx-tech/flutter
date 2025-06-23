@@ -897,9 +897,14 @@ bool Rasterizer::DrawLayerToSurface(
             auto canvas = frame->Canvas();
 
 #ifdef IMPELLER_SUPPORTS_RENDERING
-            if (delegate_.GetSettings().enable_impeller) {
-              canvas->Translate(0.0, render_surface->size().height);
-              canvas->Scale(1.0, -1.0);
+            auto settings = delegate_.GetSettings();
+            if (settings.enable_impeller) {
+              auto context = impeller_context_.lock();
+              auto backendType = context->GetBackendType();
+              if (backendType != impeller::Context::BackendType::kOpenGLES) {
+                canvas->Translate(0.0, render_surface->size().height);
+                canvas->Scale(1.0, -1.0);
+              }
             }
 #endif
 

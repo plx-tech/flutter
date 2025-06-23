@@ -105,6 +105,7 @@ sk_sp<DlImage> SnapshotControllerImpeller::MakeFromTexture(int64_t raw_texture,
   impeller::TextureDescriptor desc;
   desc.storage_mode = impeller::StorageMode::kHostVisible;
   desc.format = impeller::PixelFormat::kB8G8R8A8UNormInt;
+  desc.type = impeller::TextureType::kTextureExternalOES;
   desc.size = {size.width(), size.height()};
   desc.mip_count = 1;
   auto texture = context->GetContext()->GetResourceAllocator()->WrapTexture(

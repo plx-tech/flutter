@@ -4527,7 +4527,7 @@ class _FragmentShaderImageFilter implements ImageFilter {
         _equals(nativeFilter, other.nativeFilter);
   }
 
-  @Native<Bool Function(Handle, Handle)>(symbol: 'ImageFilter::equal')
+  @Native<Bool Function(Handle, Handle)>(symbol: 'ImageFilter::equals')
   external static bool _equals(_ImageFilter a, _ImageFilter b);
 
   @override
