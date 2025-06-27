@@ -367,4 +367,17 @@ bool AndroidShellHolder::IsSurfaceControlEnabled() {
   return GetPlatformView()->IsSurfaceControlEnabled();
 }
 
+void AndroidShellHolder::PostTaskOnRasterThread(
+    const std::function<void(bool)>& task) {
+  fml::TaskRunner::RunNowOrPostTask(
+      shell_->GetTaskRunners().GetRasterTaskRunner(),
+      [task = std::move(task),
+       is_gpu_disabled_sync_switch = shell_->GetIsGpuDisabledSyncSwitch()] {
+        is_gpu_disabled_sync_switch->Execute(
+            fml::SyncSwitch::Handlers()
+                .SetIfFalse([&task] { task(false); })
+                .SetIfTrue([&task] { task(true); }));
+      });
+}
+
 }  // namespace flutter

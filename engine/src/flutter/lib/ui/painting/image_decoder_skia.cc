@@ -164,7 +164,8 @@ sk_sp<SkImage> ImageDecoderSkia::ImageFromCompressedData(
 static SkiaGPUObject<SkImage> UploadRasterImage(
     sk_sp<SkImage> image,
     const fml::WeakPtr<IOManager>& io_manager,
-    const fml::tracing::TraceFlow& flow) {
+    const fml::tracing::TraceFlow& flow,
+    bool mipmapped) {
   TRACE_EVENT0("flutter", __FUNCTION__);
   flow.Step(__FUNCTION__);
 
@@ -198,13 +199,14 @@ static SkiaGPUObject<SkImage> UploadRasterImage(
             result = {std::move(texture_image), nullptr};
           })
           .SetIfFalse([&result, context = io_manager->GetResourceContext(),
-                       &pixmap, queue = io_manager->GetSkiaUnrefQueue()] {
+                       &pixmap, queue = io_manager->GetSkiaUnrefQueue(),
+                       mipmapped] {
             TRACE_EVENT0("flutter", "MakeCrossContextImageFromPixmap");
             sk_sp<SkImage> texture_image =
                 SkImages::CrossContextTextureFromPixmap(
                     context.get(),  // context
                     pixmap,         // pixmap
-                    true,           // buildMips,
+                    mipmapped,      // buildMips,
                     true            // limitToMaxTextureSize
                 );
             if (!texture_image) {
@@ -222,6 +224,7 @@ static SkiaGPUObject<SkImage> UploadRasterImage(
 void ImageDecoderSkia::Decode(fml::RefPtr<ImageDescriptor> descriptor_ref_ptr,
                               uint32_t target_width,
                               uint32_t target_height,
+                              bool mipmapped,
                               const ImageResult& callback) {
   TRACE_EVENT0("flutter", __FUNCTION__);
   fml::tracing::TraceFlow flow(__FUNCTION__);
@@ -273,8 +276,8 @@ void ImageDecoderSkia::Decode(fml::RefPtr<ImageDescriptor> descriptor_ref_ptr,
                          result,                                  //
                          target_width = target_width,             //
                          target_height = target_height,           //
-                         flow = std::move(flow)                   //
-  ]() mutable {
+                         flow = std::move(flow),                  //
+                         mipmapped]() mutable {
         // Step 1: Decompress the image.
         // On Worker.
 
@@ -298,8 +301,8 @@ void ImageDecoderSkia::Decode(fml::RefPtr<ImageDescriptor> descriptor_ref_ptr,
         // On IO Thread.
 
         io_runner->PostTask(fml::MakeCopyable([io_manager, decompressed, result,
-                                               flow =
-                                                   std::move(flow)]() mutable {
+                                               flow = std::move(flow),
+                                               mipmapped]() mutable {
           if (!io_manager) {
             FML_DLOG(ERROR) << "Could not acquire IO manager.";
             result({}, std::move(flow));
@@ -315,8 +318,8 @@ void ImageDecoderSkia::Decode(fml::RefPtr<ImageDescriptor> descriptor_ref_ptr,
             return;
           }
 
-          auto uploaded =
-              UploadRasterImage(std::move(decompressed), io_manager, flow);
+          auto uploaded = UploadRasterImage(std::move(decompressed), io_manager,
+                                            flow, mipmapped);
 
           if (!uploaded.skia_object()) {
             FML_DLOG(ERROR) << "Could not upload image to the GPU.";

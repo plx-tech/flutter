@@ -124,3 +124,64 @@ class SkwasmSurface {
     surfaceDestroy(handle);
   }
 }
+
+class SkwasmRenderSurface implements ui.RenderSurface {
+  SkwasmRenderSurface(this.texture, this.width, this.height);
+
+  @override
+  int height;
+  @override
+  Object texture;
+  @override
+  int width;
+
+  DomImageBitmap? _lastRenderedImageBitmap;
+
+  static Future<ui.RenderSurface> fromTexture(Object textureId, int width, int height) async {
+    // Setup is run via createDefault in the parent constructor
+    return SkwasmRenderSurface(textureId, width, height);
+  }
+
+  @override
+  Future<Object> toBytes(ByteBuffer buffer) async {
+    if (_lastRenderedImageBitmap == null) {
+      throw StateError('No image to rasterize');
+    }
+    return _lastRenderedImageBitmap!;
+  }
+
+  @override
+  ui.Image? makeImageSnapshotFromSource(Object src) {
+    final _VideoFrame videoFrame = _VideoFrame(src as JSObject);
+
+    return SkwasmImage(
+      imageCreateFromTextureSource(
+        videoFrame as JSObject,
+        width,
+        height,
+        (renderer as SkwasmRenderer).surface.handle,
+      ),
+    );
+  }
+
+  Future<void> renderPicture(SkwasmPicture picture) async {
+    if (_lastRenderedImageBitmap != null) {
+      _lastRenderedImageBitmap!.close();
+    }
+    final RenderResult result = await (renderer as SkwasmRenderer).surface.renderPictures(
+      <SkwasmPicture>[picture],
+    );
+    _lastRenderedImageBitmap = result.imageBitmaps.first;
+  }
+
+  @override
+  Future<void> dispose() async {
+    _lastRenderedImageBitmap?.close();
+  }
+}
+
+@JS('VideoFrame')
+@staticInterop
+extension type _VideoFrame._(JSObject _) implements DomCanvasImageSource {
+  external factory _VideoFrame(JSAny source);
+}

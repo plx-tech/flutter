@@ -30,6 +30,11 @@ class TestAllocator : public Allocator {
     return ISize(1024, 1024);
   };
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const {
+    return nullptr;
+  }
+
   std::shared_ptr<DeviceBuffer> OnCreateBuffer(
       const DeviceBufferDescriptor& desc) override {
     if (should_fail) {

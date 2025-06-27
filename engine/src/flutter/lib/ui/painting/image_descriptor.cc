@@ -109,12 +109,13 @@ void ImageDescriptor::initRaw(Dart_Handle descriptor_handle,
 
 void ImageDescriptor::instantiateCodec(Dart_Handle codec_handle,
                                        int target_width,
-                                       int target_height) {
+                                       int target_height,
+                                       bool mipmapped) {
   fml::RefPtr<Codec> ui_codec;
   if (!generator_ || generator_->GetFrameCount() == 1) {
     ui_codec = fml::MakeRefCounted<SingleFrameCodec>(
         static_cast<fml::RefPtr<ImageDescriptor>>(this), target_width,
-        target_height);
+        target_height, mipmapped);
   } else {
     ui_codec = fml::MakeRefCounted<MultiFrameCodec>(generator_);
   }

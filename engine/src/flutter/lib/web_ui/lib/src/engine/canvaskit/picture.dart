@@ -96,6 +96,17 @@ class CkPicture implements ScenePicture {
   }
 
   @override
+  Future<Object?> toCanvas(int width, int height) async {
+    final Surface surface = CanvasKitRenderer.instance.pictureToImageSurface;
+    final CkSurface ckSurface = surface.createOrUpdateSurface(BitmapSize(width, height));
+    final CkCanvas ckCanvas = ckSurface.getCanvas();
+    ckCanvas.clear(const ui.Color(0x00000000));
+    ckCanvas.drawPicture(this);
+    ckSurface.surface.flush();
+    return surface.hostElement;
+  }
+
+  @override
   CkImage toImageSync(int width, int height) {
     assert(debugCheckNotDisposed('Cannot convert picture to image.'));
 
@@ -121,5 +132,21 @@ class CkPicture implements ScenePicture {
       throw StateError('Unable to convert image pixels into SkImage.');
     }
     return CkImage(rasterImage);
+  }
+
+  @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) async {
+    final CkRenderSurface ckRenderSurfce = renderSurface as CkRenderSurface;
+    final SkCanvas canvas = ckRenderSurfce.skiaObject.getCanvas();
+    canvas.save();
+
+    if (flipVertical) {
+      canvas.translate(0, renderSurface.height.toDouble());
+      canvas.scale(1, -1);
+    }
+
+    canvas.drawPicture(skiaObject);
+    canvas.restore();
+    ckRenderSurfce.skiaObject.flush();
   }
 }

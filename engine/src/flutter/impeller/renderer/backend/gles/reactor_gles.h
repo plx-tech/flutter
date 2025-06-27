@@ -182,6 +182,9 @@ class ReactorGLES {
   /// @return The reactor handle.
   HandleGLES CreateUntrackedHandle(HandleType type) const;
 
+  HandleGLES CreateUntrackedHandleExternal(HandleType type,
+                                           GLuint external_handle) const;
+
   //----------------------------------------------------------------------------
   /// @brief      Collect a reactor handle.
   ///

@@ -8,6 +8,7 @@
 
 #include "flutter/flow/surface.h"
 #include "flutter/fml/build_config.h"
+#include "flutter/fml/make_copyable.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/impeller/display_list/dl_dispatcher.h"
 #include "flutter/impeller/display_list/dl_image_impeller.h"
@@ -94,6 +95,24 @@ sk_sp<DlImage> DoMakeRasterSnapshot(
 }
 }  // namespace
 
+sk_sp<DlImage> SnapshotControllerImpeller::MakeFromTexture(int64_t raw_texture,
+                                                           SkISize size) {
+  const auto& delegate = GetDelegate();
+  if (!delegate.GetSurface() || !delegate.GetAiksContext()) {
+    return nullptr;
+  }
+  auto context = GetDelegate().GetSurface()->GetAiksContext();
+  impeller::TextureDescriptor desc;
+  desc.storage_mode = impeller::StorageMode::kHostVisible;
+  desc.format = impeller::PixelFormat::kB8G8R8A8UNormInt;
+  desc.type = impeller::TextureType::kTextureExternalOES;
+  desc.size = {size.width(), size.height()};
+  desc.mip_count = 1;
+  auto texture = context->GetContext()->GetResourceAllocator()->WrapTexture(
+      desc, raw_texture);
+  return impeller::DlImageImpeller::Make(texture);
+}
+
 void SnapshotControllerImpeller::MakeRasterSnapshot(
     sk_sp<DisplayList> display_list,
     SkISize picture_size,
@@ -144,6 +163,19 @@ sk_sp<DlImage> SnapshotControllerImpeller::MakeRasterSnapshotSync(
   return DoMakeRasterSnapshot(display_list, picture_size, GetDelegate());
 }
 
+std::unique_ptr<Surface> SnapshotControllerImpeller::MakeOffscreenSurface(
+    int64_t raw_texture,
+    const SkISize& size) {
+  const auto surface_size = impeller::ISize(size.width(), size.height());
+  const auto aiks_context = GetDelegate().GetSurface()->GetAiksContext();
+  auto context = aiks_context->GetContext();
+  auto offscreen_render_target =
+      impeller::RenderTarget::CreateOffscreenFromTexture(raw_texture, *context,
+                                                         surface_size);
+  return std::make_unique<OffscreenImpellerSurface>(aiks_context.get(),
+                                                    offscreen_render_target);
+}
+
 void SnapshotControllerImpeller::CacheRuntimeStage(
     const std::shared_ptr<impeller::RuntimeStage>& runtime_stage) {
   if (!GetDelegate().IsAiksContextInitialized()) {
@@ -161,6 +193,72 @@ void SnapshotControllerImpeller::CacheRuntimeStage(
 sk_sp<SkImage> SnapshotControllerImpeller::ConvertToRasterImage(
     sk_sp<SkImage> image) {
   FML_UNREACHABLE();
+}
+
+SnapshotControllerImpeller::OffscreenImpellerSurface::OffscreenImpellerSurface(
+    impeller::AiksContext* aiks_context,
+    std::shared_ptr<impeller::RenderTarget> render_target)
+    : _aiks_context(aiks_context), _render_target(render_target) {}
+
+SnapshotControllerImpeller::OffscreenImpellerSurface::
+    ~OffscreenImpellerSurface() = default;
+
+bool SnapshotControllerImpeller::OffscreenImpellerSurface::IsValid() {
+  return _aiks_context != nullptr;
+}
+
+std::unique_ptr<SurfaceFrame>
+SnapshotControllerImpeller::OffscreenImpellerSurface::AcquireFrame(
+    const SkISize& size) {
+  const auto weak_render_target =
+      std::weak_ptr<impeller::RenderTarget>(_render_target);
+  const auto encode_callback = [aiks_context = _aiks_context,
+                                weak_render_target = weak_render_target,
+                                size = size](SurfaceFrame& surface_frame,
+                                             DlCanvas* canvas) mutable -> bool {
+    if (!aiks_context) {
+      return false;
+    }
+
+    const auto render_target = weak_render_target.lock();
+    if (!render_target) {
+      return false;
+    }
+
+    auto display_list = surface_frame.BuildDisplayList();
+    if (!display_list) {
+      FML_LOG(ERROR) << "Could not build display list for surface frame.";
+      return false;
+    }
+
+    SkIRect cull_rect = SkIRect::MakeWH(size.width(), size.height());
+
+    return impeller::RenderToTarget(aiks_context->GetContentContext(),  //
+                                    *render_target,                     //
+                                    display_list,                       //
+                                    cull_rect,                          //
+                                    /*reset_host_buffer=*/false,        //
+                                    false);
+  };
+  return std::make_unique<SurfaceFrame>(
+      nullptr,                          // surface
+      SurfaceFrame::FramebufferInfo{},  // framebuffer info
+      encode_callback,                  // encode callback
+      [](const SurfaceFrame&) { return true; },
+      size,     // frame size
+      nullptr,  // context result
+      true);    // display list fallback
+}
+
+SkMatrix
+SnapshotControllerImpeller::OffscreenImpellerSurface::GetRootTransformation()
+    const {
+  return {};
+}
+
+GrDirectContext*
+SnapshotControllerImpeller::OffscreenImpellerSurface::GetContext() {
+  return nullptr;
 }
 
 }  // namespace flutter

@@ -14,6 +14,7 @@ abstract class LayerVisitor {
   void visitClipRect(ClipRectEngineLayer clipRect);
   void visitClipRRect(ClipRRectEngineLayer clipRRect);
   void visitClipRSuperellipse(ClipRSuperellipseEngineLayer clipRSuperellipse);
+  void visitBlend(BlendEngineLayer blend);
   void visitOpacity(OpacityEngineLayer opacity);
   void visitTransform(TransformEngineLayer transform);
   void visitOffset(OffsetEngineLayer offset);
@@ -169,6 +170,16 @@ class PrerollVisitor extends LayerVisitor {
   @override
   void visitOffset(OffsetEngineLayer offset) {
     visitTransform(offset);
+  }
+
+  @override
+  void visitBlend(BlendEngineLayer blend) {
+    mutatorsStack.pushTransform(Matrix4.translationValues(blend.offset.dx, blend.offset.dy, 0.0));
+    mutatorsStack.pushOpacity(blend.alpha);
+    prerollContainerLayer(blend);
+    mutatorsStack.pop();
+    mutatorsStack.pop();
+    blend.paintBounds = blend.paintBounds.translate(blend.offset.dx, blend.offset.dy);
   }
 
   @override
@@ -341,6 +352,23 @@ class MeasureVisitor extends LayerVisitor {
     if (clipRSuperellipse.clipBehavior == ui.Clip.antiAliasWithSaveLayer) {
       measuringCanvas.restore();
     }
+    measuringCanvas.restore();
+  }
+
+  void visitBlend(BlendEngineLayer blend) {
+    assert(blend.needsPainting);
+
+    final CkPaint paint = CkPaint();
+    paint.color = ui.Color.fromARGB(blend.alpha, 0, 0, 0);
+    paint.blendMode = blend.blendMode;
+
+    measuringCanvas.save();
+    measuringCanvas.translate(blend.offset.dx, blend.offset.dy);
+
+    measuringCanvas.saveLayer(ui.Rect.largest, paint);
+    measureChildren(blend);
+    // Restore twice: once for the translate and once for the saveLayer.
+    measuringCanvas.restore();
     measuringCanvas.restore();
   }
 
@@ -584,6 +612,21 @@ class PaintVisitor extends LayerVisitor {
     if (clipRSuperellipse.clipBehavior == ui.Clip.antiAliasWithSaveLayer) {
       nWayCanvas.restore();
     }
+    nWayCanvas.restore();
+  }
+
+  void visitBlend(BlendEngineLayer blend) {
+    final CkPaint paint = CkPaint();
+    paint.color = ui.Color.fromARGB(blend.alpha, 0, 0, 0);
+    paint.blendMode = blend.blendMode;
+
+    nWayCanvas.save();
+    nWayCanvas.translate(blend.offset.dx, blend.offset.dy);
+
+    nWayCanvas.saveLayer(ui.Rect.largest, paint);
+    paintChildren(blend);
+    // Restore twice: once for the translate and once for the saveLayer.
+    nWayCanvas.restore();
     nWayCanvas.restore();
   }
 
