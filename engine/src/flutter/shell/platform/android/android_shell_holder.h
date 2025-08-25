@@ -108,6 +108,7 @@ class AndroidShellHolder {
 
   // Visible for testing.
   const std::unique_ptr<Shell>& GetShellForTesting() const { return shell_; }
+  void PostTaskOnRasterThread(const std::function<void(bool)>& task);
 
  private:
   const flutter::Settings settings_;

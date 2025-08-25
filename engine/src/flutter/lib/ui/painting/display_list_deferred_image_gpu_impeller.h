@@ -29,6 +29,12 @@ class DlDeferredImageGPUImpeller final : public DlImage {
       fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
       fml::RefPtr<fml::TaskRunner> raster_task_runner);
 
+  static sk_sp<DlDeferredImageGPUImpeller> MakeFromTexture(
+      const int64_t raw_texture,
+      const SkISize& size,
+      fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+      fml::RefPtr<fml::TaskRunner> raster_task_runner);
+
   // |DlImage|
   ~DlDeferredImageGPUImpeller() override;
 
@@ -75,6 +81,12 @@ class DlDeferredImageGPUImpeller final : public DlImage {
         fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
         fml::RefPtr<fml::TaskRunner> raster_task_runner);
 
+    static std::shared_ptr<ImageWrapper> MakeFromTexture(
+        const int64_t raw_texture,
+        const SkISize& size,
+        fml::TaskRunnerAffineWeakPtr<SnapshotDelegate> snapshot_delegate,
+        fml::RefPtr<fml::TaskRunner> raster_task_runner);
+
     bool isTextureBacked() const;
 
     const std::shared_ptr<impeller::Texture> texture() const {
@@ -107,6 +119,8 @@ class DlDeferredImageGPUImpeller final : public DlImage {
     // list, the image wrapper will be updated to hold this display list and the
     // layer tree can be dropped.
     void SnapshotDisplayList(std::unique_ptr<LayerTree> layer_tree = nullptr);
+
+    void FromTexture(int64_t raw_texture);
 
     // |ContextListener|
     void OnGrContextCreated() override;

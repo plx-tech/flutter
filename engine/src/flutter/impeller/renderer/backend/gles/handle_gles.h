@@ -75,11 +75,14 @@ class HandleGLES {
   const std::optional<UniqueID>& GetName() const { return name_; }
   std::size_t GetHash() const { return hash_; }
 
+  bool GetExternal() const { return external_; }
+
  private:
   HandleType type_ = HandleType::kUnknown;
   std::optional<UniqueID> name_;
   std::size_t hash_;
   std::optional<uint64_t> untracked_id_;
+  bool external_ = false;
 
   friend class ReactorGLES;
 

@@ -39,6 +39,10 @@ class AHBTextureSourceVK final : public TextureSourceVK {
                      std::unique_ptr<android::HardwareBuffer> backing_store,
                      bool is_swapchain_image);
 
+  static std::shared_ptr<AHBTextureSourceVK> fromRawHardwareBuffer(
+      const std::shared_ptr<Context>& context,
+      int64_t raw_hardware_buffer);
+
   // |TextureSourceVK|
   ~AHBTextureSourceVK() override;
 

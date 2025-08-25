@@ -10,6 +10,8 @@
 
 #include "flutter/flow/layers/layer_tree.h"
 #include "flutter/lib/ui/dart_wrapper.h"
+#include "flutter/lib/ui/painting/render_surface.h"
+#include "third_party/skia/include/core/SkPicture.h"
 
 namespace flutter {
 
@@ -32,6 +34,10 @@ class Scene : public RefCountedDartWrappable<Scene> {
   Dart_Handle toImage(uint32_t width,
                       uint32_t height,
                       Dart_Handle raw_image_handle);
+
+  void renderToSurface(fml::RefPtr<RenderSurface> render_surface,
+                       bool flipY,
+                       Dart_Handle callback);
 
   void dispose();
 

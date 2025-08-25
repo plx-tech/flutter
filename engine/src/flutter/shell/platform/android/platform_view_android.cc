@@ -473,8 +473,8 @@ void PlatformViewAndroid::ReleaseResourceContext() const {
 // |PlatformView|
 std::shared_ptr<impeller::Context> PlatformViewAndroid::GetImpellerContext()
     const {
-  if (android_surface_) {
-    return android_surface_->GetImpellerContext();
+  if (android_context_) {
+    return android_context_->GetImpellerContext();
   }
   return android_context_->GetImpellerContext();
 }

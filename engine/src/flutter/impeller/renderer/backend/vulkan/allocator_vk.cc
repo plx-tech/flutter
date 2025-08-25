@@ -12,11 +12,17 @@
 #include "impeller/base/allocation_size.h"
 #include "impeller/core/formats.h"
 #include "impeller/renderer/backend/vulkan/capabilities_vk.h"
+#include "impeller/renderer/backend/vulkan/command_buffer_vk.h"
 #include "impeller/renderer/backend/vulkan/device_buffer_vk.h"
 #include "impeller/renderer/backend/vulkan/device_holder_vk.h"
 #include "impeller/renderer/backend/vulkan/formats_vk.h"
 #include "impeller/renderer/backend/vulkan/texture_vk.h"
 #include "vulkan/vulkan_enums.hpp"
+
+#if FML_OS_ANDROID
+#include "impeller/renderer/backend/vulkan/android/ahb_texture_source_vk.h"
+#include "impeller/toolkit/android/hardware_buffer.h"
+#endif
 
 namespace impeller {
 
@@ -94,6 +100,46 @@ static PoolVMA CreateBufferPool(VmaAllocator allocator) {
     return {};
   }
   return {allocator, pool};
+}
+
+std::shared_ptr<Texture> AllocatorVK::WrapTexture(const TextureDescriptor& desc,
+                                                  int64_t raw_texture) const {
+#if (defined(FML_OS_ANDROID))
+  auto context = context_.lock();
+  auto texture_source =
+      AHBTextureSourceVK::fromRawHardwareBuffer(context, raw_texture);
+
+  auto texture =
+      std::make_shared<impeller::TextureVK>(context_, texture_source);
+  {
+    auto buffer = context->CreateCommandBuffer();
+    impeller::CommandBufferVK& buffer_vk =
+        impeller::CommandBufferVK::Cast(*buffer);
+
+    impeller::BarrierVK barrier;
+    barrier.cmd_buffer = buffer_vk.GetCommandBuffer();
+    barrier.src_access = impeller::vk::AccessFlagBits::eColorAttachmentWrite |
+                         impeller::vk::AccessFlagBits::eTransferWrite;
+    barrier.src_stage =
+        impeller::vk::PipelineStageFlagBits::eColorAttachmentOutput |
+        impeller::vk::PipelineStageFlagBits::eTransfer;
+    barrier.dst_access = impeller::vk::AccessFlagBits::eShaderRead;
+    barrier.dst_stage = impeller::vk::PipelineStageFlagBits::eFragmentShader;
+
+    barrier.new_layout = impeller::vk::ImageLayout::eShaderReadOnlyOptimal;
+
+    if (!texture->SetLayout(barrier)) {
+      //
+    }
+    if (!context->GetCommandQueue()->Submit({buffer}).ok()) {
+      //
+    }
+  }
+
+  return texture;
+#else
+  abort();
+#endif
 }
 
 AllocatorVK::AllocatorVK(std::weak_ptr<Context> context,
