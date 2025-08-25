@@ -74,6 +74,43 @@ class EngineScene implements ui.Scene {
   Map<String, Object> get debugJsonDescription {
     return {'rootLayer': rootLayer.debugJsonDescription};
   }
+
+  @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) async {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final ui.Rect canvasRect = ui.Rect.fromLTWH(
+      0,
+      0,
+      renderSurface.width.toDouble(),
+      renderSurface.height.toDouble(),
+    );
+    final ui.Canvas canvas = ui.Canvas(recorder, canvasRect);
+
+    // Only rasterizes the picture slices.
+    for (final LayerSlice? slice in rootLayer.slices) {
+      if (slice != null) {
+        canvas.drawPicture(slice.picture);
+      }
+    }
+    final ui.Picture picture = recorder.endRecording();
+    await picture.renderToSurface(renderSurface, flipVertical: flipVertical);
+  }
+
+  @override
+  Future<Object?> toCanvas(int width, int height) {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final ui.Rect canvasRect = ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble());
+    final ui.Canvas canvas = ui.Canvas(recorder, canvasRect);
+
+    // Only rasterizes the picture slices.
+    for (final LayerSlice? slice in rootLayer.slices) {
+      if (slice != null) {
+        canvas.drawPicture(slice.picture);
+      }
+    }
+    final ui.Picture picture = recorder.endRecording();
+    return picture.toCanvas(width, height);
+  }
 }
 
 sealed class OcclusionMapNode {
@@ -485,5 +522,15 @@ class EngineSceneBuilder implements ui.SceneBuilder {
   T pushLayer<T extends PictureEngineLayer>(T layer) {
     currentBuilder = LayerBuilder.childLayer(parent: currentBuilder, layer: layer);
     return layer;
+  }
+
+  @override
+  ui.BlendEngineLayer pushBlend(
+    int alpha,
+    ui.BlendMode blendMode, {
+    ui.Offset offset = ui.Offset.zero,
+    ui.BlendEngineLayer? oldLayer,
+  }) {
+    return pushLayer<BlendLayer>(BlendLayer(BlendOperation(alpha, blendMode, offset)));
   }
 }

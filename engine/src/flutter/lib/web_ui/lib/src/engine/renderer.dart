@@ -118,6 +118,7 @@ abstract class Renderer {
     int? targetWidth,
     int? targetHeight,
     bool allowUpscaling = true,
+    bool mipmapped = true,
   });
 
   Future<ui.Codec> instantiateImageCodecFromUrl(
@@ -229,4 +230,6 @@ abstract class Renderer {
   Future<void> renderScene(ui.Scene scene, EngineFlutterView view);
 
   void dumpDebugInfo();
+
+  ui.RenderSurface createRenderSurface(Object textureId, int width, int height);
 }

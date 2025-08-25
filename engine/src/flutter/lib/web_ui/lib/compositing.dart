@@ -5,7 +5,9 @@
 part of ui;
 
 abstract class Scene {
+  Future<void> renderToSurface(RenderSurface renderSurface, {bool flipVertical = false});
   Future<Image> toImage(int width, int height);
+  Future<Object?> toCanvas(int width, int height);
   Image toImageSync(int width, int height);
   void dispose();
 }
@@ -23,6 +25,8 @@ abstract class ClipRSuperellipseEngineLayer implements EngineLayer {}
 abstract class ClipPathEngineLayer implements EngineLayer {}
 
 abstract class OpacityEngineLayer implements EngineLayer {}
+
+abstract class BlendEngineLayer implements EngineLayer {}
 
 abstract class ColorFilterEngineLayer implements EngineLayer {}
 
@@ -63,6 +67,12 @@ abstract class SceneBuilder {
     OpacityEngineLayer? oldLayer,
   });
   ColorFilterEngineLayer pushColorFilter(ColorFilter filter, {ColorFilterEngineLayer? oldLayer});
+  BlendEngineLayer pushBlend(
+    int alpha,
+    BlendMode blendMode, {
+    Offset offset = Offset.zero,
+    BlendEngineLayer? oldLayer,
+  });
   ImageFilterEngineLayer pushImageFilter(
     ImageFilter filter, {
     Offset offset = Offset.zero,

@@ -33,6 +33,10 @@ class TextureMTL final : public Texture,
   static std::shared_ptr<TextureMTL> Create(TextureDescriptor desc,
                                             id<MTLTexture> texture);
 
+  static std::shared_ptr<TextureMTL> TexturePointerWrapper(
+      TextureDescriptor desc,
+      int64_t texture_pointer);
+
   // |Texture|
   ~TextureMTL() override;
 

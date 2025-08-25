@@ -56,6 +56,8 @@ static fml::jni::ScopedJavaGlobalRef<jclass>* g_bitmap_class = nullptr;
 
 static fml::jni::ScopedJavaGlobalRef<jclass>* g_bitmap_config_class = nullptr;
 
+static fml::jni::ScopedJavaGlobalRef<jclass>* g_flutter_task_class = nullptr;
+
 // Called By Native
 
 static jmethodID g_flutter_callback_info_constructor = nullptr;
@@ -152,6 +154,8 @@ static jmethodID g_bitmap_create_bitmap_method = nullptr;
 static jmethodID g_bitmap_copy_pixels_from_buffer_method = nullptr;
 
 static jmethodID g_bitmap_config_value_of = nullptr;
+
+static jmethodID g_task_run_method = nullptr;
 
 // Mutators
 static fml::jni::ScopedJavaGlobalRef<jclass>* g_mutators_stack_class = nullptr;
@@ -697,6 +701,18 @@ static void UpdateJavaAssetManager(JNIEnv* env,
       AssetResolver::AssetResolverType::kApkAssetProvider);
 }
 
+static void RunOnRasterThread(JNIEnv* env,
+                              jobject jcaller,
+                              jlong shell_holder,
+                              jobject task) {
+  ANDROID_SHELL_HOLDER->PostTaskOnRasterThread(
+      [task = fml::jni::ScopedJavaGlobalRef<jobject>(env, task)](
+          bool is_gpu_disabled) {
+        JNIEnv* _env = fml::jni::AttachCurrentThread();
+        _env->CallVoidMethod(task.obj(), g_task_run_method, is_gpu_disabled);
+      });
+}
+
 bool RegisterApi(JNIEnv* env) {
   static const JNINativeMethod flutter_jni_methods[] = {
       // Start of methods from FlutterJNI
@@ -812,6 +828,11 @@ bool RegisterApi(JNIEnv* env) {
           .name = "nativeGetIsSoftwareRenderingEnabled",
           .signature = "()Z",
           .fnPtr = reinterpret_cast<void*>(&GetIsSoftwareRendering),
+      },
+      {
+          .name = "nativeRunOnRasterThread",
+          .signature = "(JLio/flutter/embedding/engine/renderer/Task;)V",
+          .fnPtr = reinterpret_cast<void*>(&RunOnRasterThread),
       },
       {
           .name = "nativeRegisterTexture",
@@ -1098,6 +1119,20 @@ bool PlatformViewAndroid::Register(JNIEnv* env) {
                "io/flutter/embedding/engine/renderer/SurfaceTextureWrapper"));
   if (g_texture_wrapper_class->is_null()) {
     FML_LOG(ERROR) << "Could not locate SurfaceTextureWrapper class";
+    return false;
+  }
+
+  g_flutter_task_class = new fml::jni::ScopedJavaGlobalRef<jclass>(
+      env, env->FindClass("io/flutter/embedding/engine/renderer/Task"));
+  if (g_flutter_task_class->is_null()) {
+    FML_LOG(ERROR) << "Could not locate Task class";
+    return false;
+  }
+
+  g_task_run_method =
+      env->GetMethodID(g_flutter_task_class->obj(), "run", "(Z)V");
+  if (g_task_run_method == nullptr) {
+    FML_LOG(ERROR) << "Could not locate Task.run() method";
     return false;
   }
 

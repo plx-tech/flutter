@@ -31,6 +31,15 @@ class CanvasImage final : public RefCountedDartWrappable<CanvasImage> {
 
   Dart_Handle CreateOuterWrapping();
 
+  static fml::RefPtr<CanvasImage> CreateFromTextureID(int64_t texture_id,
+                                                      int32_t width,
+                                                      int32_t height);
+
+  static fml::RefPtr<CanvasImage> CreateFromTexturePointer(
+      int64_t texture_pointer,
+      int32_t width,
+      int32_t height);
+
   int width() { return image_ ? image_->width() : 0; }
 
   int height() { return image_ ? image_->height() : 0; }

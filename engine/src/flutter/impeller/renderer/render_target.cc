@@ -253,6 +253,69 @@ const std::optional<StencilAttachment>& RenderTarget::GetStencilAttachment()
   return stencil_;
 }
 
+std::shared_ptr<RenderTarget> RenderTarget::CreateOffscreenFromTexture(
+    int64_t raw_texture,
+    const Context& context,
+    ISize size,
+    const std::string& label,
+    StorageMode color_storage_mode,
+    LoadAction color_load_action,
+    StoreAction color_store_action,
+    StorageMode stencil_storage_mode,
+    LoadAction stencil_load_action,
+    StoreAction stencil_store_action) {
+  if (size.IsEmpty()) {
+    return {};
+  }
+
+  auto allocator = context.GetResourceAllocator();
+
+  TextureDescriptor stencil_tex0;
+  stencil_tex0.storage_mode = stencil_storage_mode;
+  stencil_tex0.format = PixelFormat::kD32FloatS8UInt;
+  stencil_tex0.size = size;
+  stencil_tex0.usage = TextureUsage::kRenderTarget;
+
+  impeller::TextureDescriptor desc;
+  desc.storage_mode = impeller::StorageMode::kHostVisible;
+  desc.format = impeller::PixelFormat::kB8G8R8A8UNormInt;
+  desc.size = size;
+  desc.mip_count = 1;
+  desc.usage = TextureUsage::kRenderTarget | TextureUsage::kShaderRead |
+               TextureUsage::kShaderWrite;
+
+  ColorAttachment color0;
+  color0.clear_color = Color::BlackTransparent();
+  color0.load_action = color_load_action;
+  color0.store_action = color_store_action;
+  color0.texture = allocator->WrapTexture(desc, raw_texture);
+
+  if (!color0.texture) {
+    return {};
+  }
+
+  color0.texture->SetLabel(SPrintF("%s Color Texture", label.c_str()));
+
+  auto texture = allocator->CreateTexture(stencil_tex0);
+  if (!texture) {
+    return {};
+  }
+
+  auto target = std::make_shared<RenderTarget>();
+  target->SetColorAttachment(color0, 0u);
+  target->SetupDepthStencilAttachments(
+      context, *allocator, size, true,
+      SPrintF("%s Stencil Texture", label.c_str()),
+      RenderTarget::AttachmentConfig{
+          .storage_mode = stencil_storage_mode,
+          .load_action = stencil_load_action,
+          .store_action = stencil_store_action,
+      },
+      texture);
+
+  return target;
+}
+
 size_t RenderTarget::GetTotalAttachmentCount() const {
   size_t count = 0u;
   for (const auto& [_, color] : colors_) {

@@ -578,6 +578,65 @@ class OpacityOperation implements LayerOperation {
   }
 }
 
+class BlendLayer with PictureEngineLayer implements ui.BlendEngineLayer {
+  BlendLayer(this.operation);
+
+  @override
+  final BlendOperation operation;
+
+  @override
+  BlendLayer emptyClone() => BlendLayer(operation);
+}
+
+class BlendOperation implements LayerOperation {
+  BlendOperation(this.alpha, this.blendMode, this.offset);
+
+  final int alpha;
+  final ui.BlendMode blendMode;
+  final ui.Offset offset;
+
+  @override
+  ui.Rect mapRect(ui.Rect contentRect) => contentRect.shift(offset);
+
+  @override
+  void pre(SceneCanvas canvas) {
+    if (offset != ui.Offset.zero) {
+      canvas.save();
+      canvas.translate(offset.dx, offset.dy);
+    }
+    canvas.saveLayer(
+      ui.Rect.largest,
+      ui.Paint()
+        ..color = ui.Color.fromARGB(alpha, 0, 0, 0)
+        ..blendMode = blendMode,
+    );
+  }
+
+  @override
+  void post(SceneCanvas canvas) {
+    canvas.restore();
+    if (offset != ui.Offset.zero) {
+      canvas.restore();
+    }
+  }
+
+  @override
+  PlatformViewStyling createPlatformViewStyling() => PlatformViewStyling(
+    position: offset != ui.Offset.zero
+        ? PlatformViewPosition.offset(offset)
+        : const PlatformViewPosition.zero(),
+    opacity: alpha.toDouble() / 255.0,
+  );
+
+  @override
+  bool get affectsBackdrop => false;
+
+  @override
+  Map<String, Object> get debugJsonDescription {
+    return <String, Object>{'type': 'blend', 'blendMode': blendMode.toString()};
+  }
+}
+
 class TransformLayer with PictureEngineLayer implements ui.TransformEngineLayer {
   TransformLayer(this.operation);
 

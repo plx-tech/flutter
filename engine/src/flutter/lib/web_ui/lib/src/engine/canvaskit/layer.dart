@@ -154,6 +154,20 @@ class TransformEngineLayer extends ContainerLayer implements ui.TransformEngineL
   }
 }
 
+/// A layer that paints its children with the given opacity and blend.
+class BlendEngineLayer extends ContainerLayer implements ui.BlendEngineLayer {
+  BlendEngineLayer(this.alpha, this.blendMode, this.offset);
+
+  final int alpha;
+  final ui.BlendMode blendMode;
+  final ui.Offset offset;
+
+  @override
+  void accept(LayerVisitor visitor) {
+    visitor.visitBlend(this);
+  }
+}
+
 /// Translates its children along x and y coordinates.
 ///
 /// This is a thin wrapper over [TransformEngineLayer] just so the framework

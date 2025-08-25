@@ -15,6 +15,9 @@ class AllocatorGLES final : public Allocator {
   // |Allocator|
   ~AllocatorGLES() override;
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const override;
+
  private:
   friend class ContextGLES;
 

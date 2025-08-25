@@ -151,6 +151,8 @@ class TextureGLES final : public Texture,
   // visible for testing
   Type ComputeTypeForBinding(GLenum target) const;
 
+  HandleGLES GetHandleGLES() const { return handle_; }
+
  private:
   std::shared_ptr<ReactorGLES> reactor_;
   const Type type_;
