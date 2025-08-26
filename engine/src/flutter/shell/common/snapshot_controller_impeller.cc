@@ -212,10 +212,9 @@ SnapshotControllerImpeller::OffscreenImpellerSurface::AcquireFrame(
     const SkISize& size) {
   const auto weak_render_target =
       std::weak_ptr<impeller::RenderTarget>(_render_target);
-  const auto encode_callback = [aiks_context = _aiks_context,
-                                weak_render_target = weak_render_target,
-                                size = size](SurfaceFrame& surface_frame,
-                                             DlCanvas* canvas) mutable -> bool {
+  const auto encode_callback =
+      [aiks_context = _aiks_context, weak_render_target = weak_render_target](
+          SurfaceFrame& surface_frame, DlCanvas* canvas) mutable -> bool {
     if (!aiks_context) {
       return false;
     }
@@ -231,7 +230,8 @@ SnapshotControllerImpeller::OffscreenImpellerSurface::AcquireFrame(
       return false;
     }
 
-    SkIRect cull_rect = SkIRect::MakeWH(size.width(), size.height());
+    auto cull_rect =
+        impeller::Rect::MakeSize(render_target->GetRenderTargetSize());
 
     return impeller::RenderToTarget(aiks_context->GetContentContext(),  //
                                     *render_target,                     //
