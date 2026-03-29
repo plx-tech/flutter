@@ -69,6 +69,11 @@ class TestImpellerAllocator : public impeller::Allocator {
 
   ~TestImpellerAllocator() = default;
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const override {
+    return nullptr;
+  }
+
  private:
   uint16_t MinimumBytesPerRow(PixelFormat format) const override { return 0; }
 

@@ -10,6 +10,10 @@ import 'package:meta/meta.dart';
 import 'package:ui/src/engine.dart';
 import 'package:ui/ui.dart' as ui;
 
+import 'image.dart';
+import 'native_memory.dart';
+import 'renderer.dart';
+
 // Only supported in profile/release mode. Allows Flutter to use MSAA but
 // removes the ability for disabling AA on Paint objects.
 const bool _kUsingMSAA = bool.fromEnvironment('flutter.canvaskit.msaa');
@@ -91,6 +95,7 @@ abstract class CkSurface extends Surface {
   }
 
   /// The underlying Skia graphics context.
+  SkGrContext? get grContext => _grContext;
   SkGrContext? _grContext;
 
   /// Handles the context lost event by acquiring a new canvas and recreating
@@ -337,5 +342,82 @@ class CkOnscreenSurface extends CkSurface implements OnscreenSurface {
     _handledContextLostEvent = Completer<void>();
     final WebGLContext gl = (canvas as DomHTMLCanvasElement).getGlContext(webGLVersion);
     gl.loseContextExtension.loseContext();
+  }
+}
+
+class CkRenderSurface implements ui.RenderSurface {
+  CkRenderSurface(this.texture, this.width, this.height) {
+    _ref = UniqueRef<SkSurface>(this, _setup(width, height), 'CkRenderSurface');
+  }
+
+  @override
+  int height;
+
+  @override
+  Object texture;
+
+  @override
+  int width;
+
+  late UniqueRef<SkSurface> _ref;
+
+  SkSurface get skiaObject => _ref.nativeObject;
+
+  static Future<ui.RenderSurface> fromTexture(Object textureId, int width, int height) async {
+    // Setup is run via createDefault in the parent constructor
+    return CkRenderSurface(textureId, width, height);
+  }
+
+  SkSurface _setup(int width, int height) {
+    final CkSurface surface = CanvasKitRenderer.instance.pictureToImageSurface;
+    surface.setSize(BitmapSize(width, height));
+    final SkGrContext? grContext = surface.grContext;
+    if (grContext == null) {
+      throw Exception('No grContext from pictureToImageSurface when setting up RenderSurface');
+    }
+
+    final SkSurface? skSurface = canvasKit.MakeRenderTarget(grContext, width, height);
+
+    if (skSurface == null) {
+      throw Exception('Failed to create GPU-backed SkSurface for RenderSurface');
+    }
+
+    return skSurface;
+  }
+
+  @override
+  Future<Object> toBytes(ByteBuffer buffer) async {
+    final CkSurface surface = CanvasKitRenderer.instance.pictureToImageSurface;
+    final SkGrContext? grContext = surface.grContext;
+    if (grContext == null) {
+      throw Exception('No grContext from pictureToImageSurface when setting up RenderSurface.');
+    }
+    skiaObject.readPixelsGL(buffer.asUint8List().toJS, grContext);
+    return buffer;
+  }
+
+  @override
+  ui.Image? makeImageSnapshotFromSource(Object src) {
+    final skImage = canvasKit.MakeLazyImageFromTextureSourceWithInfo(
+      src,
+      SkPartialImageInfo(
+        alphaType: canvasKit.AlphaType.Premul,
+        colorType: canvasKit.ColorType.RGBA_8888,
+        colorSpace: SkColorSpaceSRGB,
+        width: width.toDouble(),
+        height: height.toDouble(),
+      ),
+    );
+    if (skImage == null) {
+      return null;
+    }
+
+    return CkImage(skImage);
+  }
+
+  @override
+  Future<void> dispose() async {
+    skiaObject.delete();
+    _ref.dispose();
   }
 }

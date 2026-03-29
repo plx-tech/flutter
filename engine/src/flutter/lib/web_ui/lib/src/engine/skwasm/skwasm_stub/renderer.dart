@@ -261,6 +261,7 @@ class SkwasmRenderer extends Renderer {
     int? targetWidth,
     int? targetHeight,
     bool allowUpscaling = true,
+    bool mipmapped = true,
   }) {
     throw UnimplementedError('Skwasm not implemented on this platform.');
   }
@@ -320,6 +321,11 @@ class SkwasmRenderer extends Renderer {
 
   @override
   void dumpDebugInfo() {
+    throw UnimplementedError('Skwasm not implemented on this platform.');
+  }
+
+  @override
+  ui.RenderSurface createRenderSurface(Object textureId, int width, int height) {
     throw UnimplementedError('Skwasm not implemented on this platform.');
   }
 

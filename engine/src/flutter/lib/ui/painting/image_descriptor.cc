@@ -194,6 +194,7 @@ ImageDecoder::TargetPixelFormat ToImageDecoderTargetPixelFormat(int32_t value) {
 void ImageDescriptor::instantiateCodec(Dart_Handle codec_handle,
                                        int32_t target_width,
                                        int32_t target_height,
+                                       bool mipmapped,
                                        int32_t destination_format) {
   fml::RefPtr<Codec> ui_codec;
   if (!generator_ || generator_->GetFrameCount() == 1) {
@@ -201,6 +202,7 @@ void ImageDescriptor::instantiateCodec(Dart_Handle codec_handle,
         static_cast<fml::RefPtr<ImageDescriptor>>(this),  //
         target_width,                                     //
         target_height,                                    //
+        mipmapped,                                        //
         ToImageDecoderTargetPixelFormat(destination_format));
   } else {
     ui_codec = fml::MakeRefCounted<MultiFrameCodec>(generator_);

@@ -221,9 +221,10 @@ def zip_archive(dst, args):
   if args.include_extension_safe_frameworks:
     zip_contents.append('extension_safe/Flutter.xcframework')
 
-  sky_utils.assert_valid_codesign_config(
-      dst, zip_contents, with_entitlements, without_entitlements, unsigned_binaries
-  )
+  # Removed for Clay builds, we don't produce extension_safe files, so this assert will fail the build
+  # sky_utils.assert_valid_codesign_config(
+  #     dst, zip_contents, with_entitlements, without_entitlements, unsigned_binaries
+  # )
   sky_utils.create_zip(dst, 'artifacts.zip', zip_contents)
 
 

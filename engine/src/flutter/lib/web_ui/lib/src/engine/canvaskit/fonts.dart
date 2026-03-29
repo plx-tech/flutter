@@ -60,12 +60,12 @@ class SkiaFontCollection implements FlutterFontCollection {
     familyToFontMap.clear();
 
     for (final RegisteredFont font in _registeredFonts) {
-      _fontProvider!.registerFont(font.bytes, font.family);
+      _fontProvider!.registerFont(font.bytes.toJS, font.family);
       familyToFontMap.putIfAbsent(font.family, () => <SkFont>[]).add(SkFont(font.typeface));
     }
 
     for (final RegisteredFont font in registeredFallbackFonts) {
-      _fontProvider!.registerFont(font.bytes, font.family);
+      _fontProvider!.registerFont(font.bytes.toJS, font.family);
       familyToFontMap.putIfAbsent(font.family, () => <SkFont>[]).add(SkFont(font.typeface));
     }
   }

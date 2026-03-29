@@ -24,6 +24,7 @@ import io.flutter.embedding.engine.plugins.service.ServiceControlSurface;
 import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister;
 import io.flutter.embedding.engine.renderer.FlutterRenderer;
 import io.flutter.embedding.engine.renderer.RenderSurface;
+import io.flutter.embedding.engine.renderer.Task;
 import io.flutter.embedding.engine.systemchannels.AccessibilityChannel;
 import io.flutter.embedding.engine.systemchannels.BackGestureChannel;
 import io.flutter.embedding.engine.systemchannels.DeferredComponentChannel;
@@ -757,5 +758,9 @@ public class FlutterEngine implements ViewUtils.DisplayUpdater {
   @Override
   public void updateDisplayMetrics(float width, float height, float density) {
     flutterJNI.updateDisplayMetrics(0 /* display ID */, width, height, density);
+  }
+
+  public void runOnRasterThread(Task task) {
+    this.flutterJNI.runOnRasterThread(task);
   }
 }

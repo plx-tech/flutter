@@ -628,6 +628,7 @@ Future<Codec> instantiateImageCodec(
   int? targetWidth,
   int? targetHeight,
   bool allowUpscaling = true,
+  bool mipmapped = true,
 }) => engine.renderer.instantiateImageCodec(
   list,
   targetWidth: targetWidth,
@@ -693,7 +694,7 @@ class TargetImageSize {
   final int? height;
 }
 
-void decodeImageFromList(Uint8List list, ImageDecoderCallback callback) {
+void decodeImageFromList(Uint8List list, ImageDecoderCallback callback, {bool mipmapped = true}) {
   _decodeImageFromListAsync(list, callback);
 }
 
@@ -1061,3 +1062,116 @@ abstract class FragmentShader implements Shader {
 
   ImageSamplerSlot getImageSampler(String name);
 }
+
+abstract class RenderSurface {
+  RenderSurface(this.texture, this.width, this.height);
+
+  static Future<RenderSurface> fromTexture(Object textureId, int width, int height) async {
+    return engine.renderer.createRenderSurface(textureId, width, height);
+  }
+
+  Object texture;
+  int width;
+  int height;
+
+  Future<Object> toBytes(ByteBuffer buffer);
+  Image? makeImageSnapshotFromSource(Object src);
+  Future<void> dispose();
+}
+
+/*
+class RenderSurface extends engine.SkSurface {
+  final Object texture;
+  final int width;
+  final int height;
+  final bool isExport;
+  engine.SkGrContext? _grContext;
+
+  RenderSurface._(this.texture, this.width, this.height, this.isExport);
+
+    CkPicture(SkPicture skPicture, this.cullRect) {
+    _ref = UniqueRef<SkPicture>(this, skPicture, 'Picture');
+  }
+
+  late final UniqueRef<engine.SkSurface> _ref;
+
+  engine.SkSurface get skiaObject => _ref.nativeObject;
+
+  static Future<RenderSurface> fromTexture(Object textureId, int width, int height, { bool isExport = false }) async {
+    // Setup is run via createDefault in the parent constructor
+    return RenderSurface._(textureId, width, height, isExport);
+  }
+
+  @override
+  bool get isResurrectionExpensive => true;
+
+  engine.SkSurface setup(int width, int height) {
+    final surface = isExport ? engine.SurfaceFactory.instance.pictureToImageSurface : engine.SurfaceFactory.instance.baseSurface;
+    final engine.SkGrContext? grContext = surface.grContext;
+    if (grContext == null) {
+      throw Exception('No grContext from baseSurface when setting up RenderSurface (isExport: $isExport).');
+    }
+
+    _grContext = grContext;
+    final engine.SkSurface? skSurface = engine.canvasKit.MakeRenderTarget(grContext, width, height);
+
+    if (skSurface == null) {
+      throw Exception('Failed to create GPU-backed SkSurface for RenderSurface');
+    }
+
+    return skSurface;
+  }
+
+  void toBytes(ByteBuffer buffer) {
+    if (rawSkiaObject == null) {
+      throw Exception('Failed to create GPU-backed SkSurface for RenderSurface');
+    }
+    final engine.SkGrContext? grContext = engine.SurfaceFactory.instance.baseSurface.grContext;
+    if (grContext == null) {
+      throw Exception('No grContext from baseSurface when setting up RenderSurface.');
+    }
+    rawSkiaObject!.readPixelsGL(buffer.asUint8List(), grContext);
+  }
+
+  Image? makeImageSnapshotFromSource(Object src) {
+    if (rawSkiaObject == null) {
+      print("RenderSurface's SkiaSurface is not ready when making image from source.");
+      return null;
+    }
+
+    // TODO: patchy workaround, fix firing onchange from surface update if possible
+    final engine.SkGrContext? currContext = engine.SurfaceFactory.instance.baseSurface.grContext;
+    if (_grContext != currContext) {
+      delete();
+      rawSkiaObject = setup(width, height);
+      _grContext = currContext;
+    }
+
+    rawSkiaObject!.updateFromSource(src, width, height, false);
+    rawSkiaObject!.flush();
+    return engine.CkImage(rawSkiaObject!.makeImageSnapshot());
+  }
+
+  // SkSurface.dispose doesn't do anything for GPU-backed surfaces
+  Future<void> dispose() async { }
+
+  int rawTexture() {
+    throw UnimplementedError();
+  }
+
+  @override
+  engine.SkSurface createDefault() {
+    return setup(width, height);
+  }
+
+  @override
+  void delete() {
+    rawSkiaObject?.delete();
+  }
+
+  @override
+  engine.SkSurface resurrect() {
+    return createDefault();
+  }
+}
+*/

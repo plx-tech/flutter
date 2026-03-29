@@ -404,6 +404,7 @@ class CkFragmentShader implements ui.FragmentShader, CkShader {
       ui.TileMode.clamp,
       ui.TileMode.clamp,
       toMatrix64(Matrix4.identity().storage),
+      filterQuality: filterQuality,
     );
     samplers[index] = (sampler as CkShader).getSkShader(filterQuality);
     setFloat(lastFloatIndex + 2 * index, (sampler as CkImageShader).imageWidth.toDouble());

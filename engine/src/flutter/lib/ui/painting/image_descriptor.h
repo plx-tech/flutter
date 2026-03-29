@@ -76,6 +76,7 @@ class ImageDescriptor : public RefCountedDartWrappable<ImageDescriptor> {
   void instantiateCodec(Dart_Handle codec,
                         int32_t target_width,
                         int32_t target_height,
+                        bool mipmapped,
                         int32_t destination_format);
 
   /// @brief  The width of this image, EXIF oriented if applicable.

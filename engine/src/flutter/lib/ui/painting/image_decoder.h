@@ -46,6 +46,7 @@ class ImageDecoder {
   struct Options {
     uint32_t target_width = 0;
     uint32_t target_height = 0;
+    bool mipmapped = true;
     TargetPixelFormat target_format = TargetPixelFormat::kDontCare;
   };
 

@@ -151,6 +151,14 @@ class OpacityEngineLayer extends ContainerLayer implements ui.OpacityEngineLayer
   }
 }
 
+/// A layer that paints its children with the given blend mode and opacity.
+/// On the web, this is implemented as an opacity layer (blend mode is ignored).
+class BlendEngineLayer extends OpacityEngineLayer implements ui.BlendEngineLayer {
+  BlendEngineLayer(super.alpha, this.blendMode, super.offset);
+
+  final ui.BlendMode blendMode;
+}
+
 /// A layer that transforms its child layers by the given transform matrix.
 class TransformEngineLayer extends ContainerLayer implements ui.TransformEngineLayer {
   TransformEngineLayer(this.transform);

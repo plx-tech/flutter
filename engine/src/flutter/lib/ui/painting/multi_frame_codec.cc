@@ -185,7 +185,7 @@ MultiFrameCodec::State::GetNextFrameImage(
           error_message = std::move(message);
         },
         impeller_context, device_buffer, image_info, std::nullopt,
-        gpu_disable_sync_switch);
+        gpu_disable_sync_switch, false);
     return std::make_pair(dl_image, error_message);
 #endif
   }

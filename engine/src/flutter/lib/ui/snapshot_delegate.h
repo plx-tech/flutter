@@ -9,6 +9,9 @@
 
 #include "flutter/common/graphics/texture.h"
 #include "flutter/display_list/display_list.h"
+#include "flutter/flow/layers/layer_tree.h"
+#include "flutter/flow/skia_gpu_object.h"
+#include "flutter/flow/surface.h"
 #include "flutter/shell/common/snapshot_pixel_format.h"
 #include "third_party/skia/include/core/SkImage.h"
 #include "third_party/skia/include/gpu/ganesh/GrBackendSurface.h"
@@ -18,6 +21,7 @@
 namespace flutter {
 
 class DlImage;
+class RenderSurface;
 
 class SnapshotDelegate {
  public:
@@ -64,6 +68,18 @@ class SnapshotDelegate {
       sk_sp<DisplayList> display_list,
       const SkImageInfo& image_info) = 0;
 
+  virtual std::unique_ptr<GpuImageResult> MakeSkiaGpuImageFromTexture(
+      int64_t raw_texture,
+      const SkISize& size) = 0;
+
+  virtual sk_sp<DlImage> MakeImpellerGpuImageFromTexture(
+      int64_t raw_texture,
+      const SkISize& size) = 0;
+
+  virtual std::unique_ptr<Surface> MakeOffscreenSurface(
+      int64_t raw_texture,
+      const SkISize& size) = 0;
+
   //----------------------------------------------------------------------------
   /// @brief      Gets the registry of external textures currently in use by the
   ///             rasterizer. These textures may be updated at a cadence
@@ -97,6 +113,10 @@ class SnapshotDelegate {
   /// Impeller only.
   virtual void CacheRuntimeStage(
       const std::shared_ptr<impeller::RuntimeStage>& runtime_stage) = 0;
+
+  virtual bool DrawLayerToSurface(
+      std::shared_ptr<flutter::LayerTree> layer_tree,
+      const fml::RefPtr<RenderSurface>& render_surface) = 0;
 
   /// Bind a context to the current thread that can execute rendering commands.
   ///

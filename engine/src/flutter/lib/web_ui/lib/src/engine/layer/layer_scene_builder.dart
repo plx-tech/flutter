@@ -37,6 +37,16 @@ class LayerScene implements ui.Scene {
     final ui.Picture picture = layerTree.flatten(ui.Size(width.toDouble(), height.toDouble()));
     return picture.toImageSync(width, height);
   }
+
+  @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) {
+    throw UnimplementedError('renderToSurface is not supported on the web');
+  }
+
+  @override
+  Future<Object?> toCanvas(int width, int height) {
+    throw UnimplementedError('toCanvas is not supported on the web');
+  }
 }
 
 class LayerSceneBuilder implements ui.SceneBuilder {
@@ -193,6 +203,16 @@ class LayerSceneBuilder implements ui.SceneBuilder {
     ui.Offset offset = ui.Offset.zero,
   }) {
     return pushLayer<OpacityEngineLayer>(OpacityEngineLayer(alpha, offset));
+  }
+
+  @override
+  BlendEngineLayer pushBlend(
+    int alpha,
+    ui.BlendMode blendMode, {
+    ui.Offset offset = ui.Offset.zero,
+    ui.BlendEngineLayer? oldLayer,
+  }) {
+    return pushLayer<BlendEngineLayer>(BlendEngineLayer(alpha, blendMode, offset));
   }
 
   @override

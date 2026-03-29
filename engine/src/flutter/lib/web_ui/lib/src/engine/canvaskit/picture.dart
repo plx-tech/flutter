@@ -106,6 +106,18 @@ class CkPicture implements LayerPicture, StackTraceDebugger {
   }
 
   @override
+  Future<Object?> toCanvas(int width, int height) async {
+    final CkSurface surface = CanvasKitRenderer.instance.pictureToImageSurface;
+    surface.setSize(BitmapSize(width, height));
+    final SkSurface skiaSurface = surface.skSurface!;
+    final ckCanvas = CkCanvas.fromSkCanvas(skiaSurface.getCanvas());
+    ckCanvas.clear(const ui.Color(0x00000000));
+    ckCanvas.drawPicture(this);
+    skiaSurface.flush();
+    return null;
+  }
+
+  @override
   CkImage toImageSync(
     int width,
     int height, {
@@ -142,6 +154,22 @@ class CkPicture implements LayerPicture, StackTraceDebugger {
       throw StateError('Unable to convert image pixels into SkImage.');
     }
     return CkImage(rasterImage);
+  }
+
+  @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) async {
+    final CkRenderSurface ckRenderSurfce = renderSurface as CkRenderSurface;
+    final SkCanvas canvas = ckRenderSurfce.skiaObject.getCanvas();
+    canvas.save();
+
+    if (flipVertical) {
+      canvas.translate(0, renderSurface.height.toDouble());
+      canvas.scale(1, -1);
+    }
+
+    canvas.drawPicture(skiaObject);
+    canvas.restore();
+    ckRenderSurfce.skiaObject.flush();
   }
 
   @override

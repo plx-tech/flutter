@@ -33,6 +33,7 @@ import io.flutter.embedding.engine.mutatorsstack.FlutterMutatorsStack;
 import io.flutter.embedding.engine.renderer.FlutterUiDisplayListener;
 import io.flutter.embedding.engine.renderer.FlutterUiResizeListener;
 import io.flutter.embedding.engine.renderer.SurfaceTextureWrapper;
+import io.flutter.embedding.engine.renderer.Task;
 import io.flutter.embedding.engine.systemchannels.SettingsChannel;
 import io.flutter.plugin.common.StandardMessageCodec;
 import io.flutter.plugin.localization.LocalizationPlugin;
@@ -1735,4 +1736,13 @@ public class FlutterJNI {
   }
 
   private native boolean nativeIsSurfaceControlEnabled(long nativeShellHolderId);
+
+  private native boolean nativeShouldDisableAHB();
+
+  public void runOnRasterThread(@NonNull Task task) {
+    ensureAttachedToNative();
+    nativeRunOnRasterThread(nativeShellHolderId, task);
+  }
+
+  private native void nativeRunOnRasterThread(long nativeShellHolderId, @NonNull Task task);
 }

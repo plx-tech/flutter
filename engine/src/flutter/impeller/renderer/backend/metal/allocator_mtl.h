@@ -49,6 +49,9 @@ class AllocatorMTL final : public Allocator {
 
   AllocatorMTL(id<MTLDevice> device, std::string label);
 
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const override;
+
  private:
   friend class ContextMTL;
 

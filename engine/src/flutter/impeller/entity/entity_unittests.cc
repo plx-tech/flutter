@@ -2831,6 +2831,11 @@ class FlushTestAllocator : public Allocator {
                                            bool threadsafe) override {
     return nullptr;
   }
+
+  std::shared_ptr<Texture> WrapTexture(const TextureDescriptor& desc,
+                                       int64_t raw_texture) const {
+    return nullptr;
+  }
 };
 
 class FlushTestContentContext : public ContentContext {

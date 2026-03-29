@@ -543,6 +543,12 @@ void MutatorContext::applyOpacity(const DlRect& bounds, DlScalar opacity) {
   }
 }
 
+void MutatorContext::applyBlendOpacity(const DlRect& bounds,
+                                       SkScalar opacity,
+                                       DlBlendMode blend_mode) {
+  layer_state_stack_->push_blend_opacity(bounds, opacity, blend_mode);
+}
+
 void MutatorContext::applyImageFilter(
     const DlRect& bounds,
     const std::shared_ptr<DlImageFilter>& filter) {
@@ -685,6 +691,17 @@ void LayerStateStack::push_opacity(const DlRect& bounds, DlScalar opacity) {
   state_stack_.emplace_back(
       std::make_unique<OpacityEntry>(bounds, opacity, outstanding_));
   apply_last_entry();
+}
+
+void LayerStateStack::push_blend_opacity(const DlRect& bounds,
+                                         SkScalar opacity,
+                                         DlBlendMode blend_mode) {
+  if (blend_mode != DlBlendMode::kSrcOver) {
+    state_stack_.emplace_back(
+        std::make_unique<SaveLayerEntry>(bounds, blend_mode, outstanding_));
+    apply_last_entry();
+  }
+  push_opacity(bounds, opacity);
 }
 
 void LayerStateStack::push_color_filter(

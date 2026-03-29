@@ -36,6 +36,17 @@ class SkwasmPicture extends SkwasmObjectWrapper<RawPicture> implements LayerPict
   }) => SkwasmImage(imageCreateFromPicture(handle, width, height));
 
   @override
+  Future<void> renderToSurface(ui.RenderSurface renderSurface, {bool flipVertical = false}) async {
+    final SkwasmRenderSurface skwasmRenderSurface = renderSurface as SkwasmRenderSurface;
+    await skwasmRenderSurface.renderPicture(this);
+  }
+
+  @override
+  Future<Object?> toCanvas(int width, int height) {
+    throw UnimplementedError();
+  }
+
+  @override
   ui.Rect get cullRect {
     return withStackScope((StackScope s) {
       final RawRect rect = s.allocFloatArray(4);

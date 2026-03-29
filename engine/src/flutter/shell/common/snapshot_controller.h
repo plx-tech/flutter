@@ -64,6 +64,12 @@ class SnapshotController {
   virtual void CacheRuntimeStage(
       const std::shared_ptr<impeller::RuntimeStage>& runtime_stage) = 0;
 
+  virtual sk_sp<DlImage> MakeFromTexture(int64_t raw_texture, SkISize size) = 0;
+
+  virtual std::unique_ptr<Surface> MakeOffscreenSurface(
+      int64_t raw_texture,
+      const SkISize& size) = 0;
+
   virtual bool MakeRenderContextCurrent() = 0;
 
  protected:
