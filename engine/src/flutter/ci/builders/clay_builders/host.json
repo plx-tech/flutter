@@ -175,5 +175,23 @@
         }
       ]
     }
+  ],
+  "generators": {
+    "tasks": [
+      {
+        "name": "engine-stamp",
+        "parameters": [
+          "stamp"
+        ],
+        "script": "flutter/tools/engine_tool/bin/et.dart",
+        "language": "dart"
+      }
+    ]
+  },
+  "archives": [
+    {
+      "source": "out/engine_stamp.json",
+      "destination": "engine_stamp.json"
+    }
   ]
 }
